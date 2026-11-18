@@ -1,0 +1,96 @@
+services:
+  database:
+    image: postgres:14.2
+    env_file: .env
+    ports:
+      - "127.0.0.1:5433:5432"
+    environment:
+      POSTGRES_DB: proyecto_GdPyN
+      POSTGRES_USER: flowable
+      POSTGRES_PASSWORD: flowable
+    volumes:
+      - data_db:/var/lib/postgresql/data
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.3
+    environment:
+      discovery.type: single-node
+      node.name: flowable-node-01
+      cluster.name: flowable-cluster
+      xpack.security.enabled: "false"
+    volumes:
+      - data_es:/usr/share/elasticsearch/data
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+
+  flowable-work:
+    image: repo.flowable.com/docker/flowable/flowable-work:latest
+    environment:
+      flowable.content.storage.root-folder: /content-storage
+      server.servlet.context-path: /
+      spring.elasticsearch.uris: http://elasticsearch:9200
+      spring.datasource.driver-class-name: org.postgresql.Driver
+      spring.datasource.url: jdbc:postgresql://database:5432/flowable
+      spring.datasource.username: flowable
+      spring.datasource.password: flowable
+    ports:
+      - 8082:8080
+    volumes:
+      - data_work:/content-storage
+    depends_on:
+      - database
+      - elasticsearch
+    user: root
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+
+  flowable-design:
+    image: repo.flowable.com/docker/flowable/flowable-design:latest
+    environment:
+      flowable.design.remote.authentication.user: admin
+      flowable.design.remote.authentication.password: test
+      flowable.design.remote.idm-url: http://flowable-work:8080
+      flowable.design.deployment-api-url: http://flowable-work:8080/app-api
+      flowable.design.undeployment-api-url: http://flowable-work:8080/platform-api/app-deployments
+      flowable.design.db-store-enabled: "true"
+      server.servlet.context-path: /
+      spring.datasource.driver-class-name: org.postgresql.Driver
+      spring.datasource.url: jdbc:postgresql://database:5432/flowable
+      spring.datasource.username: flowable
+      spring.datasource.password: flowable
+    ports:
+      - 8082:8080
+    depends_on:
+      - database
+
+  flowable-hub:
+    image: repo.flowable.com/docker/flowable/flowable-hub:latest
+    environment:
+      flowable.hub.db-store-enabled: "true"
+      flowable.hub.app-provider.type: properties
+      flowable.hub.apps.work.name: Flowable Work
+      flowable.hub.apps.work.public-url: http://localhost:8090
+      flowable.hub.apps.work.private-url: http://flowable-work:8080
+      flowable.hub.apps.work.authentication-type: basic
+      flowable.hub.apps.work.credential-key: admin
+      flowable.hub.apps.work.credential-value: test
+      server.servlet.context-path: /
+      spring.datasource.driver-class-name: org.postgresql.Driver
+      spring.datasource.url: jdbc:postgresql://database:5432/flowable
+      spring.datasource.username: flowable
+      spring.datasource.password: flowable
+    ports:
+      - 8083:8080
+    depends_on:
+      - database
+
+volumes:
+  data_db:
+  data_es:
+  data_work:
