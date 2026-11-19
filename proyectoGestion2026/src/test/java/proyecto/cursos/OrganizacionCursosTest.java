@@ -3,12 +3,19 @@ package proyecto.cursos;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.time.Instant;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Date;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.flowable.common.engine.api.FlowableException;
+import org.flowable.common.engine.impl.identity.Authentication;
 import org.flowable.dmn.engine.configurator.DmnEngineConfigurator;
 import org.flowable.engine.ProcessEngine;
 import org.flowable.engine.ProcessEngineConfiguration;
@@ -33,7 +40,7 @@ class OrganizacionCursosTest {
     private static DmnEngineConfigurator dmn;
 
     @BeforeAll
-    static void iniciarMotor() {
+    static void iniciarMotor() throws Exception {
         configuracion = (ProcessEngineConfigurationImpl)
                 ProcessEngineConfiguration.createStandaloneInMemProcessEngineConfiguration();
         configuracion.setJdbcUrl("jdbc:h2:mem:curso_punto1;DB_CLOSE_DELAY=-1");
@@ -41,6 +48,15 @@ class OrganizacionCursosTest {
         dmn = new DmnEngineConfigurator();
         configuracion.addConfigurator(dmn);
         motor = configuracion.buildProcessEngine();
+        Path esquema = Path.of("..", "flowable-cursos", "sql", "01-estructura.sql");
+        if (!Files.isRegularFile(esquema)) {
+            esquema = Path.of("flowable-cursos", "sql", "01-estructura.sql");
+        }
+        String cola = Files.readString(esquema).split("SELECT 'CREATE DATABASE", 2)[0];
+        try (Connection conexion = configuracion.getDataSource().getConnection();
+                var ddl = conexion.createStatement()) {
+            ddl.execute(cola);
+        }
         InstalarCursos.crearPersonal(EngineServiceUtil.getIdmIdentityService(configuracion), "clave-didactica");
         InstalarCursos.crearPersonal(EngineServiceUtil.getIdmIdentityService(configuracion), "clave-didactica");
         InstalarCursos.desplegar(motor, dmn, true);
@@ -86,6 +102,7 @@ class OrganizacionCursosTest {
         String sexto = iniciar();
         assertFalse(activa(sexto));
         assertEquals("NO_VIABLE", historica(sexto, "resultado"));
+        assertEquals("NO_VIABLE", estadoInstitucional(sexto));
         assertEquals(5L, historica(sexto, "cantidadOtrosCursos"));
     }
 
@@ -105,6 +122,7 @@ class OrganizacionCursosTest {
         assertEquals("jefeAdmin", tarea(id, "Archivar").getAssignee());
         completar(id, "Archivar", Map.of());
         assertEquals("RECHAZADO", historica(id, "resultado"));
+        assertEquals("RECHAZADO", estadoInstitucional(id));
     }
 
     @Test
@@ -119,6 +137,7 @@ class OrganizacionCursosTest {
         assertEquals(2, variable(id, "recordatorios"));
         completar(id, "Archivar", Map.of());
         assertEquals("SIN_RESPUESTA", historica(id, "resultado"));
+        assertEquals("SIN_RESPUESTA", estadoInstitucional(id));
     }
 
     @Test
@@ -128,9 +147,11 @@ class OrganizacionCursosTest {
         assertNotNull(espera(id, "Nómina de participantes"));
         assertThrows(FlowableException.class, () -> completar(id, "Material", Map.of()));
         Task materiales = tarea(id, "Material");
-        motor.getTaskService().claim(materiales.getId(), "docente1");
-        assertThrows(FlowableException.class, () -> completar(id, "Material", Map.of()));
-        motor.getTaskService().unclaim(materiales.getId());
+        assertThrows(FlowableException.class, () -> como("docente1",
+                () -> motor.getTaskService().claim(materiales.getId(), "docente1")));
+        assertNull(tarea(id, "Material").getAssignee());
+        assertThrows(FlowableException.class, () -> como("docente1",
+                () -> motor.getTaskService().claim(materiales.getId(), "jefeAdmin")));
         reclamarYCompletar(id, "Material", Map.of());
         reclamar(id, "Activity_12i2hpf");
         assertThrows(FlowableException.class, () -> completar(id, "Activity_12i2hpf", Map.of()));
@@ -157,10 +178,12 @@ class OrganizacionCursosTest {
         completar(id, "Informe", Map.of("informeResultados", "informe.pdf"));
         completar(id, "EnviarInforme", Map.of());
         assertTrue(activa(id));
+        assertEquals("EN_TRAMITE", estadoInstitucional(id));
         assertNotNull(tarea(id, "Activity_1m08pcl"));
         reclamarYCompletar(id, "Activity_1m08pcl", Map.of());
         assertFalse(activa(id), () -> estado(id));
         assertEquals("FINALIZADO", historica(id, "resultado"));
+        assertEquals("FINALIZADO", estadoInstitucional(id));
         assertEquals(true, historica(id, "aulaLiberada"));
         assertEquals(true, historica(id, "aulaVirtualLiberada"));
         assertEquals(true, historica(id, "equipamientoLiberado"));
@@ -183,6 +206,7 @@ class OrganizacionCursosTest {
 
         assertFalse(activa(id), () -> estado(id));
         assertEquals("CANCELADO", historica(id, "resultado"));
+        assertEquals("CANCELADO", estadoInstitucional(id));
         assertEquals(true, historica(id, "aulaLiberada"));
         assertEquals(true, historica(id, "equipamientoLiberado"));
         assertNull(historica(id, "aulaVirtualLiberada"));
@@ -196,6 +220,7 @@ class OrganizacionCursosTest {
         mensaje(id, "Cancelación", Map.of());
         assertFalse(activa(id), () -> estado(id));
         assertEquals("CANCELADO", historica(id, "resultado"));
+        assertEquals("CANCELADO", estadoInstitucional(id));
         assertEquals(false, historica(id, "equipamientoLiberado"));
     }
 
@@ -250,11 +275,65 @@ class OrganizacionCursosTest {
     }
 
     private void reclamar(String id, String actividad) {
-        motor.getTaskService().claim(tarea(id, actividad).getId(), "jefeAdmin");
+        como("jefeAdmin", () -> motor.getTaskService().claim(tarea(id, actividad).getId(), "jefeAdmin"));
     }
 
     private void completar(String id, String actividad, Map<String, Object> variables) {
-        motor.getTaskService().complete(tarea(id, actividad).getId(), variables);
+        Task pendiente = tarea(id, actividad);
+        como(pendiente.getAssignee(), () -> motor.getTaskService().complete(pendiente.getId(), variables));
+    }
+
+    private void como(String usuario, Runnable operacion) {
+        Authentication.setAuthenticatedUserId(usuario);
+        try {
+            operacion.run();
+        } finally {
+            Authentication.setAuthenticatedUserId(null);
+        }
+    }
+
+    @Test
+    void soloElResponsableCompletaYUnaTareaDirectaNoSeReclama() {
+        String id = iniciar();
+        String tarea = tarea(id, "Propuesta").getId();
+        assertThrows(FlowableException.class, () -> como("adminCursos",
+                () -> motor.getTaskService().complete(tarea, PROPUESTA)));
+        assertThrows(FlowableException.class, () -> como("jefeAdmin",
+                () -> motor.getTaskService().unclaim(tarea)));
+        assertThrows(FlowableException.class, () -> como("adminCursos",
+                () -> motor.getTaskService().setAssignee(tarea, "adminCursos")));
+        assertEquals("jefeAdmin", tarea(id, "Propuesta").getAssignee());
+        completar(id, "Propuesta", PROPUESTA);
+        assertNotNull(espera(id, "Aceptación"));
+        assertEquals("EN_TRAMITE", estadoInstitucional(id));
+    }
+
+    @Test
+    void listaDefinitivaSeAsignaAlAdministrativoConMenosPendientes() {
+        Task carga = motor.getTaskService().newTask();
+        carga.setName("Tarea asignada previamente");
+        carga.setAssignee("adminCursos");
+        motor.getTaskService().saveTask(carga);
+        try {
+            String id = preparar();
+            mensaje(id, "Nómina de participantes", Map.of("nomina", "[\"Ana\"]"));
+            assertEquals("jefeAdmin", tarea(id, "Lista").getAssignee());
+        } finally {
+            motor.getTaskService().deleteTask(carga.getId());
+        }
+    }
+
+    private String estadoInstitucional(String id) {
+        String sql = "SELECT estado FROM cursos_pendientes WHERE proceso_id = ? ORDER BY revision DESC LIMIT 1";
+        try (Connection conexion = configuracion.getDataSource().getConnection();
+                PreparedStatement consulta = conexion.prepareStatement(sql)) {
+            consulta.setString(1, id);
+            try (ResultSet resultado = consulta.executeQuery()) {
+                return resultado.next() ? resultado.getString(1) : null;
+            }
+        } catch (SQLException ex) {
+            throw new AssertionError(ex);
+        }
     }
 
     private Task tarea(String id, String actividad) {

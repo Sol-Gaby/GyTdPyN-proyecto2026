@@ -20,6 +20,10 @@
   <bpmn:message id="Msg_equipo_liberado" name="Liberación de equipamiento completada"/>
   <bpmn:process id="Process_Curso" name="Organizar curso de capacitación" isExecutable="true">
     <bpmn:documentation>Modelo conceptual, no ejecutable. Los recordatorios se cuentan por versión de propuesta. La fecha programada se obtiene de la propuesta aceptada. Para cada participante se espera una respuesta de encuesta; el enunciado no fija un vencimiento. La empresa se representa como pool de caja negra; los mensajes internos del subproceso se expresan con tareas de envío/recepción y eventos de mensaje.</bpmn:documentation>
+    <bpmn:extensionElements>
+      <ns0:executionListener xmlns:ns0="http://flowable.org/bpmn" event="start" class="proyecto.cursos.EstadoCurso"/>
+      <ns1:executionListener xmlns:ns1="http://flowable.org/bpmn" event="end" class="proyecto.cursos.EstadoCurso"/>
+    </bpmn:extensionElements>
     <bpmn:laneSet id="LaneSet_0ilhqvy">
       <bpmn:lane id="Lane_0sq5phl" name="Docentes">
         <bpmn:flowNodeRef>Dictar</bpmn:flowNodeRef>
@@ -96,7 +100,11 @@
       <bpmn:outgoing>ModificarProp</bpmn:outgoing>
       <bpmn:messageEventDefinition id="Def_Modificar" messageRef="Msg_mod"/>
     </bpmn:intermediateCatchEvent>
-    <bpmn:sequenceFlow id="main3" sourceRef="Enviar" targetRef="Esperar"/>
+    <bpmn:sequenceFlow id="main3" sourceRef="Enviar" targetRef="Esperar">
+      <bpmn:extensionElements>
+        <ns0:executionListener xmlns:ns0="http://flowable.org/bpmn" event="take" class="proyecto.cursos.EstadoCurso"/>
+      </bpmn:extensionElements>
+    </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="VolverEsperar" sourceRef="Recordatorio" targetRef="Esperar"/>
     <bpmn:sequenceFlow id="wait3" sourceRef="Esperar" targetRef="Plazo"/>
     <bpmn:sequenceFlow id="wait0" sourceRef="Esperar" targetRef="Aceptar"/>
@@ -129,6 +137,8 @@
     <bpmn:userTask xmlns:flowable="http://flowable.org/bpmn" id="Archivar" name="Archivar solicitud" flowable:assignee="jefeAdmin">
       <bpmn:extensionElements>
         <flowable:taskListener event="complete" class="proyecto.cursos.TareasCurso"/>
+        <flowable:taskListener event="create" class="proyecto.cursos.TareasCurso"/>
+        <flowable:taskListener event="assignment" class="proyecto.cursos.TareasCurso"/>
       </bpmn:extensionElements>
       <bpmn:incoming>SinRespuesta</bpmn:incoming>
       <bpmn:incoming>Rechazado</bpmn:incoming>
@@ -148,6 +158,8 @@
     <bpmn:userTask xmlns:flowable="http://flowable.org/bpmn" id="Dictar" name="Desarrollar curso" flowable:assignee="${docenteAsignado}">
       <bpmn:extensionElements>
         <flowable:taskListener event="complete" class="proyecto.cursos.TareasCurso"/>
+        <flowable:taskListener event="create" class="proyecto.cursos.TareasCurso"/>
+        <flowable:taskListener event="assignment" class="proyecto.cursos.TareasCurso"/>
       </bpmn:extensionElements>
       <bpmn:incoming>FechaDictar</bpmn:incoming>
       <bpmn:outgoing>Flow_1sdjeh6</bpmn:outgoing>
@@ -182,6 +194,7 @@
         <bpmn:extensionElements>
           <flowable:taskListener xmlns:flowable="http://flowable.org/bpmn" event="create" class="proyecto.cursos.TareasCurso"/>
           <flowable:taskListener xmlns:flowable="http://flowable.org/bpmn" event="complete" class="proyecto.cursos.TareasCurso"/>
+          <ns2:taskListener xmlns:ns2="http://flowable.org/bpmn" event="assignment" class="proyecto.cursos.TareasCurso"/>
         </bpmn:extensionElements>
         <bpmn:incoming>NominaLista</bpmn:incoming>
         <bpmn:outgoing>Flow_1q09oq9</bpmn:outgoing>
@@ -189,6 +202,8 @@
       <bpmn:userTask xmlns:flowable="http://flowable.org/bpmn" id="Material" name="Preparar materiales" flowable:candidateGroups="administracion">
         <bpmn:extensionElements>
           <flowable:taskListener event="complete" class="proyecto.cursos.TareasCurso"/>
+          <flowable:taskListener event="create" class="proyecto.cursos.TareasCurso"/>
+          <flowable:taskListener event="assignment" class="proyecto.cursos.TareasCurso"/>
         </bpmn:extensionElements>
         <bpmn:incoming>s5</bpmn:incoming>
         <bpmn:outgoing>Flow_0pbsav2</bpmn:outgoing>
@@ -202,6 +217,8 @@
       <bpmn:userTask xmlns:flowable="http://flowable.org/bpmn" id="Virtual" name="Solicitar Aula Virtual" flowable:candidateGroups="administracion">
         <bpmn:extensionElements>
           <flowable:taskListener event="complete" class="proyecto.cursos.TareasCurso"/>
+          <flowable:taskListener event="create" class="proyecto.cursos.TareasCurso"/>
+          <flowable:taskListener event="assignment" class="proyecto.cursos.TareasCurso"/>
         </bpmn:extensionElements>
         <bpmn:incoming>or1</bpmn:incoming>
         <bpmn:outgoing>oj1</bpmn:outgoing>
@@ -209,6 +226,8 @@
       <bpmn:userTask xmlns:flowable="http://flowable.org/bpmn" id="Equipo" name="Contratar equipamiento" flowable:candidateGroups="administracion">
         <bpmn:extensionElements>
           <flowable:taskListener event="complete" class="proyecto.cursos.TareasCurso"/>
+          <flowable:taskListener event="create" class="proyecto.cursos.TareasCurso"/>
+          <flowable:taskListener event="assignment" class="proyecto.cursos.TareasCurso"/>
         </bpmn:extensionElements>
         <bpmn:incoming>or2</bpmn:incoming>
         <bpmn:outgoing>oj2</bpmn:outgoing>
@@ -247,9 +266,11 @@
       <bpmn:sequenceFlow id="s11" sourceRef="OrFin" targetRef="ParFin"/>
       <bpmn:sequenceFlow id="s12" sourceRef="ParFin" targetRef="SubFin"/>
       <bpmn:sequenceFlow id="Flow_0r6hcyb" sourceRef="Activity_12i2hpf" targetRef="OrInicio"/>
-      <bpmn:userTask xmlns:flowable="http://flowable.org/bpmn" id="Activity_12i2hpf" name="Evaluar&#10;Recursos" flowable:candidateGroups="administracion">
+      <bpmn:userTask xmlns:flowable="http://flowable.org/bpmn" id="Activity_12i2hpf" name="Evaluar&#10;Recursos" flowable:candidateGroups="administracion" flowable:formKey="cursos-recursos">
         <bpmn:extensionElements>
           <flowable:taskListener event="complete" class="proyecto.cursos.TareasCurso"/>
+          <flowable:taskListener event="create" class="proyecto.cursos.TareasCurso"/>
+          <flowable:taskListener event="assignment" class="proyecto.cursos.TareasCurso"/>
         </bpmn:extensionElements>
         <bpmn:incoming>s6</bpmn:incoming>
         <bpmn:outgoing>Flow_0r6hcyb</bpmn:outgoing>
@@ -321,6 +342,8 @@
       <bpmn:userTask xmlns:flowable="http://flowable.org/bpmn" id="Activity_1m08pcl" name="Liberar Equipamiento" isForCompensation="true" flowable:candidateGroups="administracion">
         <bpmn:extensionElements>
           <flowable:taskListener event="complete" class="proyecto.cursos.TareasCurso"/>
+          <flowable:taskListener event="create" class="proyecto.cursos.TareasCurso"/>
+          <flowable:taskListener event="assignment" class="proyecto.cursos.TareasCurso"/>
         </bpmn:extensionElements>
       </bpmn:userTask>
       <bpmn:serviceTask xmlns:flowable="http://flowable.org/bpmn" id="Aula" name="Reservar aula" flowable:class="proyecto.cursos.OperacionesCurso">
@@ -339,23 +362,31 @@
       <bpmn:association id="Association_0oqohax" associationDirection="One" sourceRef="Event_1ypcc1j" targetRef="Activity_1m08pcl"/>
       <bpmn:association id="Association_0f6fnvw" associationDirection="One" sourceRef="Event_1gsyqer" targetRef="Activity_02hrooc"/>
     </bpmn:subProcess>
-    <bpmn:userTask xmlns:flowable="http://flowable.org/bpmn" id="Informe" name="Elaborar informe de resultados" flowable:assignee="jefeDocente">
+    <bpmn:userTask xmlns:flowable="http://flowable.org/bpmn" id="Informe" name="Elaborar informe de resultados" flowable:assignee="jefeDocente" flowable:formKey="cursos-informe">
       <bpmn:extensionElements>
         <flowable:taskListener event="complete" class="proyecto.cursos.TareasCurso"/>
+        <flowable:taskListener event="create" class="proyecto.cursos.TareasCurso"/>
+        <flowable:taskListener event="assignment" class="proyecto.cursos.TareasCurso"/>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_1sdjeh6</bpmn:incoming>
       <bpmn:outgoing>InformeEnviar</bpmn:outgoing>
     </bpmn:userTask>
-    <bpmn:sequenceFlow id="InformeEnviar" sourceRef="Informe" targetRef="EnviarInforme"/>
+    <bpmn:sequenceFlow id="InformeEnviar" sourceRef="Informe" targetRef="EnviarInforme">
+      <bpmn:extensionElements>
+        <ns3:executionListener xmlns:ns3="http://flowable.org/bpmn" event="take" class="proyecto.cursos.EstadoCurso"/>
+      </bpmn:extensionElements>
+    </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="InformeArchivar" sourceRef="EnviarInforme" targetRef="CompensarPreparacion"/>
     <bpmn:sequenceFlow id="Flow_0g8vm9l" sourceRef="Inicio" targetRef="ContarCursos"/>
     <bpmn:sequenceFlow id="Flow_0kbnm1d" sourceRef="Activity_1xw400l" targetRef="Gateway_10gftrn"/>
     <bpmn:sequenceFlow id="Flow_0k38d9g" name="si" sourceRef="Gateway_10gftrn" targetRef="Propuesta">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${viable == true}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:userTask xmlns:flowable="http://flowable.org/bpmn" id="Propuesta" name="Registrar y Elaborar propuesta" flowable:assignee="jefeAdmin">
+    <bpmn:userTask xmlns:flowable="http://flowable.org/bpmn" id="Propuesta" name="Registrar y Elaborar propuesta" flowable:assignee="jefeAdmin" flowable:formKey="cursos-propuesta">
       <bpmn:extensionElements>
         <flowable:taskListener event="complete" class="proyecto.cursos.TareasCurso"/>
+        <flowable:taskListener event="create" class="proyecto.cursos.TareasCurso"/>
+        <flowable:taskListener event="assignment" class="proyecto.cursos.TareasCurso"/>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_0k38d9g</bpmn:incoming>
       <bpmn:outgoing>main2</bpmn:outgoing>
@@ -391,9 +422,11 @@
       </bpmn:extensionElements>
       <bpmn:incoming>RecursosLiberados</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:userTask xmlns:flowable="http://flowable.org/bpmn" id="Revisar" name="Revisar propuesta" flowable:assignee="jefeAdmin">
+    <bpmn:userTask xmlns:flowable="http://flowable.org/bpmn" id="Revisar" name="Revisar propuesta" flowable:assignee="jefeAdmin" flowable:formKey="cursos-propuesta">
       <bpmn:extensionElements>
         <flowable:taskListener event="complete" class="proyecto.cursos.TareasCurso"/>
+        <flowable:taskListener event="create" class="proyecto.cursos.TareasCurso"/>
+        <flowable:taskListener event="assignment" class="proyecto.cursos.TareasCurso"/>
       </bpmn:extensionElements>
       <bpmn:incoming>ObservacionesRevision</bpmn:incoming>
       <bpmn:outgoing>Flow_0upbxn5</bpmn:outgoing>
@@ -401,15 +434,19 @@
     <bpmn:userTask xmlns:flowable="http://flowable.org/bpmn" id="EnviarInforme" name="Enviar informe a empresa y Archivar expediente." flowable:assignee="jefeAdmin">
       <bpmn:extensionElements>
         <flowable:taskListener event="complete" class="proyecto.cursos.TareasCurso"/>
+        <flowable:taskListener event="create" class="proyecto.cursos.TareasCurso"/>
+        <flowable:taskListener event="assignment" class="proyecto.cursos.TareasCurso"/>
       </bpmn:extensionElements>
       <bpmn:incoming>InformeEnviar</bpmn:incoming>
       <bpmn:outgoing>InformeArchivar</bpmn:outgoing>
     </bpmn:userTask>
     <bpmn:sequenceFlow id="Flow_1topamj" sourceRef="Confirmar" targetRef="Activity_1018bdz"/>
     <bpmn:sequenceFlow id="Flow_0lscijk" sourceRef="Activity_1018bdz" targetRef="Fecha"/>
-    <bpmn:userTask xmlns:flowable="http://flowable.org/bpmn" id="Activity_1018bdz" name="Definir Docente que desarrolla el curso" flowable:assignee="jefeDocente">
+    <bpmn:userTask xmlns:flowable="http://flowable.org/bpmn" id="Activity_1018bdz" name="Definir Docente que desarrolla el curso" flowable:assignee="jefeDocente" flowable:formKey="cursos-docente">
       <bpmn:extensionElements>
         <flowable:taskListener event="complete" class="proyecto.cursos.TareasCurso"/>
+        <flowable:taskListener event="create" class="proyecto.cursos.TareasCurso"/>
+        <flowable:taskListener event="assignment" class="proyecto.cursos.TareasCurso"/>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_1topamj</bpmn:incoming>
       <bpmn:outgoing>Flow_0lscijk</bpmn:outgoing>
@@ -419,7 +456,11 @@
       <bpmn:incoming>Flow_05hw5hu</bpmn:incoming>
       <bpmn:outgoing>Flow_1ffpwga</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:sequenceFlow id="Flow_1ffpwga" sourceRef="Activity_1eg7zcl" targetRef="Preparar"/>
+    <bpmn:sequenceFlow id="Flow_1ffpwga" sourceRef="Activity_1eg7zcl" targetRef="Preparar">
+      <bpmn:extensionElements>
+        <ns1:executionListener xmlns:ns1="http://flowable.org/bpmn" event="take" class="proyecto.cursos.EstadoCurso"/>
+      </bpmn:extensionElements>
+    </bpmn:sequenceFlow>
     <bpmn:serviceTask xmlns:flowable="http://flowable.org/bpmn" id="Enviar" name="Enviar propuesta" flowable:class="proyecto.cursos.OperacionesCurso">
       <bpmn:incoming>main2</bpmn:incoming>
       <bpmn:incoming>Flow_0upbxn5</bpmn:incoming>
