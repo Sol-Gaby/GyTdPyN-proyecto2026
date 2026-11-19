@@ -62,6 +62,22 @@ curl.exe -i -u admin:test "http://localhost:8082/flowable-ui/process-api/reposit
 
 El primer comando debe mostrar `Process_Curso disponible`. El segundo debe devolver **200** y el proceso. Cada caso de prueba de esta versión empieza con una solicitud nueva. El despliegue no migra instancias ya iniciadas.
 
+## Usuarios y contraseñas de la demo
+
+| Dónde | Usuario | Contraseña |
+|---|---|---|
+| Flowable UI → IDM, Modeler o Admin | `admin` | `test` en la instalación local inicial. Si cambiaste la clave en Flowable, usá la actual. |
+| Portal → **Acceso al portal**, Flowable UI → **Task**, y Postman → `/cursos/api/yo` o `/cursos/api/tareas` | `jefeAdmin`, `adminCursos`, `jefeDocente`, `docente1` o `docente2` | Al crearlos, `InstalarCursos` usa `CURSOS_PERSONAL_PASSWORD` de `flowable-cursos/.env`. Si el usuario ya existía, conserva su clave en Flowable. |
+| Portal → **Acceso al portal**, y Postman → `/cursos/api/empresa/cursos` | `empresa-EMP-PRUEBA` si el código fue `EMP-PRUEBA` | La que asignás con `CuentaEmpresa EMP-PRUEBA` después de aceptar la propuesta. Cada empresa tiene su propia cuenta. |
+| Portal → **Solicitar una capacitación**, y Postman → `POST /cursos/api/solicitudes` | Sin usuario | Sin contraseña. En Postman elegí **No Auth**. |
+| Postman → `/process-api/...`, servidor del portal y simulador de comunicaciones | `CURSOS_REST_USUARIO`, por defecto `admin` | `CURSOS_REST_CLAVE`, por defecto `test`. Son las credenciales de una cuenta técnica existente de Flowable. |
+| PostgreSQL y conexión de los auxiliares Java | `POSTGRES_USER`, por defecto `flowable` | `POSTGRES_PASSWORD` de `flowable-cursos/.env`. Al ejecutar los auxiliares desde Windows, pasá estos valores como `CURSOS_BD_USUARIO` y `CURSOS_BD_CLAVE`. |
+| Ventana Swing de **AppMateriales** | `adminCursos` o `jefeAdmin` | La clave actual del usuario en Flowable. La conexión a PostgreSQL se configura aparte. |
+
+Para la primera propuesta, ingresá al portal como `jefeAdmin`. `adminCursos` puede reclamar tareas compartidas de Administración. `jefeDocente` define quién dicta y elabora el informe. `docente1` y `docente2` ven **Desarrollar curso** cuando les corresponde por asignación y fecha.
+
+El formulario del portal envía las credenciales por HTTP Basic a `/cursos/api/yo`. Si el navegador abre su propio cuadro de autenticación después de pulsar **Ingresar**, cancelalo y revisá el usuario y la clave. Una respuesta **401** indica que la API rechazó la autenticación. Si abrís directamente una URL protegida de la API en el navegador, el cuadro es una forma esperada de pedir la misma credencial. Para verificarla en Postman, usá **GET** `http://localhost:8082/flowable-ui/cursos/api/yo` con **Basic Auth**. La respuesta esperada es **200** y el rol `PERSONAL` o `EMPRESA`.
+
 ## Recorrido de prueba en el navegador
 
 1. Abrí [Portal de capacitación](http://localhost:8082/flowable-ui/cursos/) y enviá una solicitud completa, por ejemplo para `EMP-PRUEBA`. Anotá el ID que aparece. Entrá como `jefeAdmin` con la contraseña que usás en Flowable, abrí **Registrar y elaborar propuesta** y completala. El portal usa la API de Flowable para esa misma instancia. En una solicitud viable, esa tarea desaparece y quedan activas las esperas de negociación.
