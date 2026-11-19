@@ -154,7 +154,7 @@ Debe aparecer **Process_Curso disponible**. El instalador publica el BPMN ejecut
    | Rechazo | Enviar **Rechazo** y completar **Archivar solicitud**. | `RECHAZADO`. |
    | Falta de respuesta | Para una prueba corta, crear por REST con `plazoRespuesta` igual a `PT30S`. Enviar propuesta, esperar tres vencimientos, luego archivar. | Dos recordatorios y `SIN_RESPUESTA`. |
    | Límite | Dejar cinco solicitudes de `Process_Curso` activas y crear otra. | La adicional termina `NO_VIABLE` y conserva su fila institucional. |
-   | Cancelación | En preparación, gestionar un recurso y dejar una rama pendiente. Enviar **Cancelación**. Completar liberación de equipo si corresponde. | Se interrumpen las ramas y se compensan los recursos gestionados. Resultado `CANCELADO`. |
+   | Cancelación | Seguí la prueba de compensaciones de la sección siguiente. | Resultado `CANCELADO` después de liberar los recursos gestionados y completar la pausa. |
    | Aula no disponible | Crear por REST con `aulaDisponible` de tipo `boolean` y valor `false`. Aceptar y seleccionar aula física. | El intento falla con `AULA_NO_DISPONIBLE`. Corregí la variable a `true` y repetí. |
    | Responsables | Intentar completar una tarea con otra cuenta y luego con la cuenta correcta. | La primera operación falla. La segunda avanza respetando el reclamo o la asignación directa. |
 
@@ -170,7 +170,26 @@ Debe aparecer **Process_Curso disponible**. El instalador publica el BPMN ejecut
    }
    ```
 
-### 5. Historial, minería y evidencia
+### 5. Verificar compensaciones y la salida por XOR
+
+El subproceso interruptivo **Cancelación** conserva el mensaje que envía la empresa. En el ejemplo de la cátedra, un temporizador cumple el papel de disparador de prueba. En este proyecto, enviá **Cancelación** desde el simulador o Postman cuando la instancia todavía esté en **Preparar curso**.
+
+- Al entrar en **Preparar curso**, un listener de ejecución inicializa la variable de proceso `preparacionCancelada` en `false`.
+- Los tres lanzamientos del subproceso de evento apuntan a `Aula`, `Virtual` y `Equipo`. Cada evento de borde se conecta con su manejador de liberación mediante una asociación BPMN. Cuando se importan diagramas con pools, Flowable Modeler 6.8.0 puede dibujar esas conexiones de forma incorrecta. Para comprobarlas revisá los elementos `association` del XML y el comportamiento de la instancia.
+- **Verificar compensaciones** queda justo después del tercer lanzamiento. Es una tarea directa de `jefeAdmin`. Flowable puede crear la pausa mientras el equipamiento sigue pendiente. El Task Listener impide completarla hasta que finalicen las liberaciones. La transición posterior pone `preparacionCancelada=true`. Fuera de **Preparar curso**, la XOR dirige a la notificación de cierre si el valor es `true`; su salida por defecto confirma el curso.
+
+**Prueba en Flowable Task y con el simulador**
+
+1. Levantá y desplegá esta revisión con los comandos de la sección 1. Creá una solicitud nueva, completá la propuesta y aceptala en el simulador. El despliegue aplica a instancias nuevas.
+2. En **Evaluar recursos**, seleccioná aula física, virtual y equipamiento. El aula física se reserva automáticamente. Completá **Contratar equipamiento** en **Flowable Task** y dejá pendiente **Solicitar aula virtual**. Dejá pendiente también **Preparar materiales**.
+3. En el simulador, elegí esa instancia y enviá **Cancelación**. Volvé a **Flowable UI → Task**. Las tareas de preparación deben desaparecer. Deben aparecer **Liberar Equipamiento** para Administración y **Verificar compensaciones** asignada a `jefeAdmin`.
+4. Como `jefeAdmin`, intentá completar **Verificar compensaciones** antes de liberar el equipo. La tarea debe permanecer pendiente. Reclamá y completá **Liberar Equipamiento**. Volvé a la pausa y completala. Ahora la instancia debe seguir la salida de cancelación, notificar el cierre y quedar `CANCELADO`. La salida de confirmación y **Definir docente** quedan fuera de ese recorrido.
+5. Para comprobar variables en **Postman**, usá **GET** `http://localhost:8082/flowable-ui/process-api/runtime/process-instances/ID_INSTANCIA/variables` con **Basic Auth** técnico mientras la pausa siga abierta. Esperá `aulaLiberada=true`, `equipamientoLiberado=true` después de completar su tarea, `preparacionCancelada=false` mientras la pausa esté abierta y ausencia de `aulaVirtualLiberada` porque la gestión virtual quedó pendiente. Al cerrar, consultá `/process-api/history/historic-variable-instances?processInstanceId=ID_INSTANCIA&variableName=resultado` y verificá `CANCELADO`.
+6. Repetí con otra instancia y completá las tres ramas de preparación sin cancelar. Debe salir por la rama por defecto a **Confirmar curso**, sin pasar por **Verificar compensaciones**.
+
+En CMD desde `proyectoGestion2026`, ejecutá `mvn test` para cubrir la salida normal, el rechazo del cierre anticipado, los recursos parcialmente gestionados, el aula virtual gestionada y la cancelación sin recursos completados.
+
+### 6. Historial, minería y evidencia
 
 En el **CMD de Maven** con las variables de la app de materiales, ejecutá:
 

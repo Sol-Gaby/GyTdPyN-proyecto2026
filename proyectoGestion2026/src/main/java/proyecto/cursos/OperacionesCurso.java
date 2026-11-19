@@ -43,6 +43,7 @@ public class OperacionesCurso implements JavaDelegate {
             case "Activity_1eg7zcl":
                 validarFecha(execution);
                 execution.setVariable("accesoEmpresaHabilitado", true);
+                // Las definiciones anteriores inicializan esta variable al aceptar.
                 execution.setVariable("preparacionCancelada", false);
                 execution.setVariable("equipamientoGestionado", false);
                 execution.setVariable("equipamientoLiberado", false);
@@ -68,7 +69,7 @@ public class OperacionesCurso implements JavaDelegate {
                 execution.setVariable("resultado", "CANCELADO");
                 notificar(execution, "Cancelación comunicada a la empresa");
                 break;
-            case "ComprobarEquipoLiberado":
+            case "ComprobarEquipoLiberado": // Compatibilidad con cancelaciones ya desplegadas.
                 if (!Boolean.TRUE.equals(execution.getVariable("equipamientoLiberado"))) {
                     throw new FlowableException("Todavía hay equipamiento pendiente de liberación");
                 }

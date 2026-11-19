@@ -79,6 +79,12 @@ public class TareasCurso implements TaskListener {
             case "Informe":
                 exigirTexto(task, "informeResultados");
                 break;
+            case "Virtual":
+                task.setVariable("aulaVirtualLiberada", false);
+                break;
+            case "VerificarCompensaciones":
+                verificarCompensaciones(task);
+                break;
             case "Equipo":
                 task.setVariable("equipamientoGestionado", true);
                 break;
@@ -127,7 +133,17 @@ public class TareasCurso implements TaskListener {
         return Authentication.getAuthenticatedUserId();
     }
 
+    private void verificarCompensaciones(DelegateTask tarea) {
+        boolean equipoPendiente = Boolean.TRUE.equals(tarea.getVariable("equipamientoGestionado"))
+                && !Boolean.TRUE.equals(tarea.getVariable("equipamientoLiberado"));
+        if (Boolean.FALSE.equals(tarea.getVariable("aulaLiberada"))
+                || Boolean.FALSE.equals(tarea.getVariable("aulaVirtualLiberada")) || equipoPendiente) {
+            throw new FlowableForbiddenException("Terminá de liberar los recursos antes de verificar la cancelación");
+        }
+    }
+
     private void reanudarCancelacion(DelegateTask tarea, RuntimeService runtime) {
+        // Solo las definiciones anteriores esperan este mensaje al liberar el equipo.
         String mensaje = "Liberación de equipamiento completada";
         Execution espera = runtime.createExecutionQuery().processInstanceId(tarea.getProcessInstanceId())
                 .messageEventSubscriptionName(mensaje).singleResult();

@@ -165,6 +165,7 @@ class OrganizacionCursosTest {
     @Test
     void preparacionEsParalelaYFinalNormalEsperaLaCompensacion() {
         String id = preparar();
+        assertEquals(false, variable(id, "preparacionCancelada"));
         assertEquals(Set.of("Material", "Activity_12i2hpf"), clavesTareas(id));
         assertNotNull(espera(id, "Nómina de participantes"));
         assertThrows(FlowableException.class, () -> completar(id, "Material", Map.of()));
@@ -189,6 +190,8 @@ class OrganizacionCursosTest {
         assertNull(espera(id, "Cancelación"), () -> estado(id));
 
         assertEquals("jefeDocente", tarea(id, "Activity_1018bdz").getAssignee());
+        assertNull(tareaOpcional(id, "VerificarCompensaciones"));
+        assertEquals("Curso confirmado", variable(id, "ultimoAvisoEmpresa"));
         assertThrows(FlowableException.class,
                 () -> completar(id, "Activity_1018bdz", Map.of("docenteAsignado", "jefeAdmin")));
         completar(id, "Activity_1018bdz", Map.of("docenteAsignado", "jefeDocente"));
@@ -218,15 +221,28 @@ class OrganizacionCursosTest {
         reclamarYCompletar(id, "Equipo", Map.of());
         mensaje(id, "Cancelación", Map.of());
         assertNull(espera(id, "Nómina de participantes"));
-        assertEquals(Set.of("Activity_1m08pcl"), clavesTareas(id));
+        assertEquals(Set.of("Activity_1m08pcl", "VerificarCompensaciones"), clavesTareas(id));
+        assertEquals(true, variable(id, "aulaLiberada"));
+        assertNull(variable(id, "aulaVirtualLiberada"));
+        assertEquals(false, variable(id, "preparacionCancelada"));
+        assertThrows(FlowableException.class, () -> completar(id, "VerificarCompensaciones", Map.of()));
         assertTrue(activa(id));
         assertNotEquals("Cancelación comunicada a la empresa", variable(id, "ultimoAvisoEmpresa"));
+
         reclamarYCompletar(id, "Activity_1m08pcl", Map.of());
-        Job reanudar = motor.getManagementService().createJobQuery().processInstanceId(id).singleResult();
-        assertNotNull(reanudar);
-        motor.getManagementService().executeJob(reanudar.getId());
+        assertEquals(Set.of("VerificarCompensaciones"), clavesTareas(id));
+        assertEquals("EN_TRAMITE", estadoInstitucional(id));
+        assertEquals(false, variable(id, "preparacionCancelada"));
+        assertTrue(activa(id));
+        Task pausa = tarea(id, "VerificarCompensaciones");
+        assertEquals("jefeAdmin", pausa.getAssignee());
+        assertThrows(FlowableException.class,
+                () -> como("adminCursos", () -> motor.getTaskService().complete(pausa.getId())));
+        completar(id, "VerificarCompensaciones", Map.of());
 
         assertFalse(activa(id), () -> estado(id));
+        assertEquals(true, historica(id, "preparacionCancelada"));
+        assertEquals("Cancelación comunicada a la empresa", historica(id, "ultimoAvisoEmpresa"));
         assertEquals("CANCELADO", historica(id, "resultado"));
         assertEquals("CANCELADO", estadoInstitucional(id));
         assertEquals(true, historica(id, "aulaLiberada"));
@@ -235,11 +251,30 @@ class OrganizacionCursosTest {
     }
 
     @Test
+    void cancelacionCompensaElAulaVirtualGestionadaSinActivarOtrasLiberaciones() {
+        String id = preparar();
+        reclamarYCompletar(id, "Activity_12i2hpf", recursos(false, true, false));
+        reclamarYCompletar(id, "Virtual", Map.of());
+        assertEquals(false, variable(id, "aulaVirtualLiberada"));
+
+        mensaje(id, "Cancelación", Map.of());
+        assertEquals(Set.of("VerificarCompensaciones"), clavesTareas(id));
+        assertEquals(true, variable(id, "aulaVirtualLiberada"));
+        assertNull(variable(id, "aulaLiberada"));
+        completar(id, "VerificarCompensaciones", Map.of());
+        assertEquals("CANCELADO", historica(id, "resultado"));
+    }
+
+    @Test
     void cancelacionSinRecursosGestionadosNoCreaTareasDeLiberacion() {
         String id = preparar();
         reclamarYCompletar(id, "Activity_12i2hpf", recursos(false, false, true));
         assertEquals(Set.of("Material", "Equipo"), clavesTareas(id));
         mensaje(id, "Cancelación", Map.of());
+        assertEquals(Set.of("VerificarCompensaciones"), clavesTareas(id));
+        assertNull(variable(id, "aulaLiberada"));
+        assertNull(variable(id, "aulaVirtualLiberada"));
+        completar(id, "VerificarCompensaciones", Map.of());
         assertFalse(activa(id), () -> estado(id));
         assertEquals("CANCELADO", historica(id, "resultado"));
         assertEquals("CANCELADO", estadoInstitucional(id));

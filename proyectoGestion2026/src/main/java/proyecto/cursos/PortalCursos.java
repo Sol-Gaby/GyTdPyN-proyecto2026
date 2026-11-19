@@ -220,8 +220,10 @@ public class PortalCursos {
             var actividades = new LinkedHashSet<String>();
             var claves = new LinkedHashSet<String>();
             tareas.forEach(t -> {
-                actividades.add(t.path("name").asText());
-                claves.add(t.path("taskDefinitionKey").asText());
+                String clave = t.path("taskDefinitionKey").asText();
+                actividades.add("VerificarCompensaciones".equals(clave)
+                        ? "Verificar el cierre de la cancelación" : t.path("name").asText());
+                claves.add(clave);
             });
             ejecuciones.forEach(e -> {
                 String actividad = e.path("activityId").asText();
@@ -229,7 +231,8 @@ public class PortalCursos {
                 if ("Nomina".equals(actividad)) actividades.add("Esperar la nómina de participantes");
             });
             String estado = "EN_PREPARACION";
-            if (claves.contains("Activity_1m08pcl") || claves.contains("CompensarPreparacion")
+            if (claves.contains("VerificarCompensaciones") || claves.contains("Activity_1m08pcl")
+                    || claves.contains("CompensarPreparacion")
                     || claves.contains("ComprobarEquipoLiberado")) estado = "LIBERANDO_RECURSOS";
             else if (claves.contains("Informe") || claves.contains("EnviarInforme")) estado = "EN_ELABORACION_DEL_INFORME";
             else if (claves.contains("Dictar")) estado = "EN_DESARROLLO";

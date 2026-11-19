@@ -17,7 +17,6 @@
   <bpmn:message id="Msg_enc" name="Encuesta"/>
   <bpmn:message id="Msg_resenc" name="Respuesta de encuesta"/>
   <bpmn:message id="Msg_informe" name="Informe de resultados"/>
-  <bpmn:message id="Msg_equipo_liberado" name="Liberación de equipamiento completada"/>
   <bpmn:process id="Process_Curso" name="Organizar curso de capacitación" isExecutable="true">
     <bpmn:documentation>Modelo ejecutable en Flowable. TareasCurso controla asignación, reclamo y finalización. EstadoCurso encola el registro inicial, las revisiones y el resultado del proceso. Los recordatorios se cuentan por propuesta y la fecha programada se obtiene de la aceptación.</bpmn:documentation>
     <bpmn:extensionElements>
@@ -175,7 +174,10 @@
     </bpmn:intermediateCatchEvent>
     <bpmn:sequenceFlow id="FechaDictar" sourceRef="Fecha" targetRef="Dictar"/>
     <bpmn:sequenceFlow id="Flow_1sdjeh6" sourceRef="Dictar" targetRef="Informe"/>
-    <bpmn:subProcess id="Preparar" name="Preparar curso">
+    <bpmn:subProcess id="Preparar" name="Preparar curso" xmlns:flowable="http://flowable.org/bpmn">
+      <bpmn:extensionElements>
+        <flowable:executionListener event="start" expression="${execution.setVariable('preparacionCancelada', false)}"/>
+      </bpmn:extensionElements>
       <bpmn:incoming>Flow_1ffpwga</bpmn:incoming>
       <bpmn:outgoing>Preparado</bpmn:outgoing>
       <bpmn:startEvent id="SubInicio" name="">
@@ -277,26 +279,16 @@
         <bpmn:incoming>s6</bpmn:incoming>
         <bpmn:outgoing>Flow_0r6hcyb</bpmn:outgoing>
       </bpmn:userTask>
-      <bpmn:subProcess id="Activity_048d5em" name="Cancelación" triggeredByEvent="true">
-        <bpmn:sequenceFlow id="Flow_099pqle" sourceRef="Event_1g4xmqo" targetRef="Event_1rvo4k6">
-          <bpmn:extensionElements>
-            <flowable:executionListener xmlns:flowable="http://flowable.org/bpmn" event="take" expression="${execution.setVariable('preparacionCancelada', true)}"/>
-          </bpmn:extensionElements>
-        </bpmn:sequenceFlow>
+      <bpmn:subProcess id="Activity_048d5em" name="Cancelación" triggeredByEvent="true" xmlns:flowable="http://flowable.org/bpmn">
+        <bpmn:startEvent id="Event_1g4xmqo" name="Recibir Cancelación" isInterrupting="true">
+          <bpmn:outgoing>Flow_099pqle</bpmn:outgoing>
+          <bpmn:messageEventDefinition id="MessageEventDefinition_1avzsle" messageRef="Msg_cancel"/>
+        </bpmn:startEvent>
         <bpmn:intermediateThrowEvent id="Event_1rvo4k6" name="Compensar aula">
           <bpmn:incoming>Flow_099pqle</bpmn:incoming>
           <bpmn:outgoing>Flow_0h5si5f</bpmn:outgoing>
           <bpmn:compensateEventDefinition id="CompensateEventDefinition_0vae6de" activityRef="Aula"/>
         </bpmn:intermediateThrowEvent>
-        <bpmn:startEvent id="Event_1g4xmqo" name="Recibir Cancelación" isInterrupting="true">
-          <bpmn:outgoing>Flow_099pqle</bpmn:outgoing>
-          <bpmn:messageEventDefinition id="MessageEventDefinition_1avzsle" messageRef="Msg_cancel"/>
-        </bpmn:startEvent>
-        <bpmn:sequenceFlow id="Flow_0h5si5f" sourceRef="Event_1rvo4k6" targetRef="CompensarVirtual"/>
-        <bpmn:endEvent id="Event_0snigbc">
-          <bpmn:incoming>LiberacionVerificada</bpmn:incoming>
-          <bpmn:incoming>LiberacionInnecesaria</bpmn:incoming>
-        </bpmn:endEvent>
         <bpmn:intermediateThrowEvent id="CompensarVirtual" name="Compensar aula virtual">
           <bpmn:incoming>Flow_0h5si5f</bpmn:incoming>
           <bpmn:outgoing>CompensacionVirtualEquipo</bpmn:outgoing>
@@ -307,28 +299,27 @@
           <bpmn:outgoing>CompensacionFin</bpmn:outgoing>
           <bpmn:compensateEventDefinition activityRef="Equipo"/>
         </bpmn:intermediateThrowEvent>
-        <bpmn:sequenceFlow id="CompensacionVirtualEquipo" sourceRef="CompensarVirtual" targetRef="CompensarEquipo"/>
-        <bpmn:exclusiveGateway id="FaltaLiberarEquipo" name="¿Falta liberar equipo?" default="LiberacionInnecesaria">
+        <bpmn:userTask id="VerificarCompensaciones" name="Verificar compensaciones" flowable:assignee="jefeAdmin">
+          <bpmn:extensionElements>
+            <flowable:taskListener event="create" class="proyecto.cursos.TareasCurso"/>
+            <flowable:taskListener event="assignment" class="proyecto.cursos.TareasCurso"/>
+            <flowable:taskListener event="complete" class="proyecto.cursos.TareasCurso"/>
+          </bpmn:extensionElements>
           <bpmn:incoming>CompensacionFin</bpmn:incoming>
-          <bpmn:outgoing>EsperarLiberacion</bpmn:outgoing>
-          <bpmn:outgoing>LiberacionInnecesaria</bpmn:outgoing>
-        </bpmn:exclusiveGateway>
-        <bpmn:sequenceFlow id="CompensacionFin" sourceRef="CompensarEquipo" targetRef="FaltaLiberarEquipo"/>
-        <bpmn:intermediateCatchEvent id="EsperarEquipoLiberado" name="Esperar liberación">
-          <bpmn:incoming>EsperarLiberacion</bpmn:incoming>
-          <bpmn:outgoing>EquipoLiberadoFin</bpmn:outgoing>
-          <bpmn:messageEventDefinition messageRef="Msg_equipo_liberado"/>
-        </bpmn:intermediateCatchEvent>
-        <bpmn:sequenceFlow id="EsperarLiberacion" sourceRef="FaltaLiberarEquipo" targetRef="EsperarEquipoLiberado">
-          <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${equipamientoGestionado == true &amp;&amp; equipamientoLiberado == false}</bpmn:conditionExpression>
+          <bpmn:outgoing>ConfirmarCompensaciones</bpmn:outgoing>
+        </bpmn:userTask>
+        <bpmn:endEvent id="Event_0snigbc" name="Cancelación verificada">
+          <bpmn:incoming>ConfirmarCompensaciones</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:sequenceFlow id="Flow_099pqle" sourceRef="Event_1g4xmqo" targetRef="Event_1rvo4k6"/>
+        <bpmn:sequenceFlow id="Flow_0h5si5f" sourceRef="Event_1rvo4k6" targetRef="CompensarVirtual"/>
+        <bpmn:sequenceFlow id="CompensacionVirtualEquipo" sourceRef="CompensarVirtual" targetRef="CompensarEquipo"/>
+        <bpmn:sequenceFlow id="CompensacionFin" sourceRef="CompensarEquipo" targetRef="VerificarCompensaciones"/>
+        <bpmn:sequenceFlow id="ConfirmarCompensaciones" sourceRef="VerificarCompensaciones" targetRef="Event_0snigbc">
+          <bpmn:extensionElements>
+            <flowable:executionListener event="take" expression="${execution.setVariable('preparacionCancelada', true)}"/>
+          </bpmn:extensionElements>
         </bpmn:sequenceFlow>
-        <bpmn:serviceTask xmlns:flowable="http://flowable.org/bpmn" id="ComprobarEquipoLiberado" name="Comprobar liberación" flowable:class="proyecto.cursos.OperacionesCurso" flowable:async="true">
-          <bpmn:incoming>EquipoLiberadoFin</bpmn:incoming>
-          <bpmn:outgoing>LiberacionVerificada</bpmn:outgoing>
-        </bpmn:serviceTask>
-        <bpmn:sequenceFlow id="EquipoLiberadoFin" sourceRef="EsperarEquipoLiberado" targetRef="ComprobarEquipoLiberado"/>
-        <bpmn:sequenceFlow id="LiberacionVerificada" sourceRef="ComprobarEquipoLiberado" targetRef="Event_0snigbc"/>
-        <bpmn:sequenceFlow id="LiberacionInnecesaria" sourceRef="FaltaLiberarEquipo" targetRef="Event_0snigbc"/>
       </bpmn:subProcess>
       <bpmn:boundaryEvent id="Event_0rm0c02" attachedToRef="Aula" cancelActivity="false">
         <bpmn:compensateEventDefinition id="CompensateEventDefinition_10syb4w"/>
@@ -1007,37 +998,17 @@
         <di:waypoint x="1418" y="1460"/>
         <di:waypoint x="1450" y="1460"/>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="DI_FaltaLiberarEquipo" bpmnElement="FaltaLiberarEquipo">
-        <dc:Bounds x="1520" y="1435" width="50" height="50"/>
+      <bpmndi:BPMNShape id="DI_VerificarCompensaciones" bpmnElement="VerificarCompensaciones">
+        <dc:Bounds x="1440" y="1500" width="130" height="55"/>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="DI_CompensacionFin" bpmnElement="CompensacionFin">
         <di:waypoint x="1486" y="1460"/>
-        <di:waypoint x="1520" y="1460"/>
+        <di:waypoint x="1505" y="1460"/>
+        <di:waypoint x="1505" y="1500"/>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="DI_EsperarEquipoLiberado" bpmnElement="EsperarEquipoLiberado">
-        <dc:Bounds x="1434" y="1510" width="36" height="36"/>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="DI_EsperarLiberacion" bpmnElement="EsperarLiberacion">
-        <di:waypoint x="1545" y="1485"/>
-        <di:waypoint x="1545" y="1528"/>
-        <di:waypoint x="1470" y="1528"/>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="DI_ComprobarEquipoLiberado" bpmnElement="ComprobarEquipoLiberado">
-        <dc:Bounds x="1384" y="1508" width="42" height="40"/>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="DI_EquipoLiberadoFin" bpmnElement="EquipoLiberadoFin">
-        <di:waypoint x="1434" y="1528"/>
-        <di:waypoint x="1426" y="1528"/>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="DI_LiberacionVerificada" bpmnElement="LiberacionVerificada">
-        <di:waypoint x="1384" y="1528"/>
+      <bpmndi:BPMNEdge id="DI_ConfirmarCompensaciones" bpmnElement="ConfirmarCompensaciones">
+        <di:waypoint x="1440" y="1528"/>
         <di:waypoint x="1376" y="1528"/>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="DI_LiberacionInnecesaria" bpmnElement="LiberacionInnecesaria">
-        <di:waypoint x="1545" y="1435"/>
-        <di:waypoint x="1545" y="1426"/>
-        <di:waypoint x="1358" y="1426"/>
-        <di:waypoint x="1358" y="1510"/>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="DI_ResultadoPreparacion" bpmnElement="ResultadoPreparacion">
         <dc:Bounds x="852" y="1615" width="50" height="50"/>

@@ -157,7 +157,7 @@ Con `jefeDocente`, enviá **Definir docente** con `values = {"docenteAsignado":"
 Historial en Postman: **GET** `{{ui}}/process-api/history/historic-variable-instances?processInstanceId={{instanciaId}}&variableName=resultado`. En Flowable Admin podés localizar la instancia por su ID y ver su historial. Caminos esperados:
 
 - `FINALIZADO`: confirmá, dictá, elaborá informe, archivá y terminá la liberación de los recursos.
-- `CANCELADO`: durante la preparación enviá **Cancelación**. Si contrataste equipo, reclamá y completá la tarea de liberación. El resultado llega después del trabajo asíncrono.
+- `CANCELADO`: durante la preparación enviá **Cancelación**. Si contrataste equipo, reclamá y completá la tarea de liberación. Luego completá **Verificar compensaciones** como `jefeAdmin`. El resultado llega al salir por la rama de cancelación. [Prueba completa](Predefinitiva.md#5-verificar-compensaciones-y-la-salida-por-xor).
 - `RECHAZADO`: enviá **Rechazo** y archivá la solicitud.
 - `SIN_RESPUESTA`: enviá la propuesta, dejá pasar dos recordatorios y archivá cuando venza la tercera espera.
 - `NO_VIABLE`: iniciá una solicitud mientras cinco anteriores siguen abiertas.
