@@ -29,12 +29,15 @@ public class PortalCursos {
     private static final String CONSULTA_TAREAS = "/runtime/tasks?processDefinitionKey=Process_Curso&";
     private final Institucion institucion;
     private final MotorRest motor;
+    private final ProyeccionInstitucional proyeccion;
     private final SeguridadCursos seguridad;
     private final ObjectMapper json = new ObjectMapper();
 
-    public PortalCursos(Institucion institucion, MotorRest motor, IdentityService identidad) {
+    public PortalCursos(Institucion institucion, MotorRest motor, IdentityService identidad,
+            ProyeccionInstitucional proyeccion) {
         this.institucion = institucion;
         this.motor = motor;
+        this.proyeccion = proyeccion;
         this.seguridad = new SeguridadCursos(identidad, institucion);
     }
 
@@ -89,7 +92,21 @@ public class PortalCursos {
                 if (instancia == null) throw ex;
             }
         }
-        return Map.of("processInstanceId", instancia, "usuarioEmpresa", "empresa-" + datos.get("empresaCodigo"));
+        confirmarRegistroInstitucional(instancia);
+        return Map.of("processInstanceId", instancia, "referenciaSolicitud", referencia,
+                "usuarioEmpresa", "empresa-" + datos.get("empresaCodigo"));
+    }
+
+    private void confirmarRegistroInstitucional(String instancia) {
+        String error = "La sincronización de la solicitud está pendiente. Reintentá sin cambiar los datos.";
+        try {
+            if (institucion.tieneSolicitud(instancia)) return;
+            proyeccion.procesar(instancia);
+            if (institucion.tieneSolicitud(instancia)) return;
+        } catch (SQLException ex) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, error, ex);
+        }
+        throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, error);
     }
 
     private String recuperar(String referencia, String solicitud) {
@@ -232,6 +249,12 @@ public class PortalCursos {
         byte[] pdf = institucion.documento(id, tipo, empresa);
         return pdf == null ? ResponseEntity.notFound().build()
                 : ResponseEntity.ok().contentType(MediaType.APPLICATION_PDF).body(pdf);
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<Map<String, String>> respuestaDeError(ResponseStatusException error) {
+        String mensaje = error.getReason() == null ? error.getStatus().getReasonPhrase() : error.getReason();
+        return ResponseEntity.status(error.getStatus()).body(Map.of("error", mensaje));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

@@ -49,8 +49,8 @@ public class EstadoCurso implements ExecutionListener {
 
     private void registrar(DelegateExecution execution, String estado, String documento) {
         String sql = "INSERT INTO cursos_pendientes (proceso_id, codigo_empresa, nombre_empresa, nombre_curso, "
-                + "descripcion, programa, presupuesto, fechas_posibles, fecha_inicio, informe, estado, solicitud_web, documento_tipo, habilitar_empresa) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                + "descripcion, programa, presupuesto, fechas_posibles, fecha_inicio, informe, estado, solicitud_web, documento_tipo, habilitar_empresa, solicitud_referencia) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement insert = CommandContextUtil.getDbSqlSession().getSqlSession().getConnection()
                 .prepareStatement(sql)) {
             String codigo = texto(execution, "empresaCodigo", "DEMO");
@@ -69,9 +69,11 @@ public class EstadoCurso implements ExecutionListener {
             insert.setObject(9, fecha(execution.getVariable("fechaCurso")));
             insert.setString(10, texto(execution, "informeResultados", null));
             insert.setString(11, estado);
-            insert.setString(12, texto(execution, "solicitudWeb", null));
+            String solicitud = texto(execution, "solicitudWeb", null);
+            insert.setString(12, solicitud);
             insert.setString(13, documento);
             insert.setBoolean(14, Boolean.TRUE.equals(execution.getVariable("accesoEmpresaHabilitado")));
+            insert.setString(15, solicitud == null ? null : execution.getProcessInstanceBusinessKey());
             insert.executeUpdate();
         } catch (SQLException ex) {
             throw new FlowableException("No se pudo encolar el estado institucional del curso", ex);

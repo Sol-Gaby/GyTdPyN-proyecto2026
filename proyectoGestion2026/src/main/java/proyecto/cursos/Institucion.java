@@ -49,6 +49,16 @@ public final class Institucion {
         }
     }
 
+    boolean tieneSolicitud(String instancia) throws SQLException {
+        String sql = "SELECT 1 FROM cursos WHERE proceso_id = ? AND solicitud_web IS NOT NULL";
+        try (var c = abrir(); var q = c.prepareStatement(sql)) {
+            q.setString(1, instancia);
+            try (var fila = q.executeQuery()) {
+                return fila.next();
+            }
+        }
+    }
+
     List<Map<String, Object>> cursos(String codigo) throws SQLException {
         String sql = "SELECT proceso_id, nombre, descripcion, estado, fecha_inicio FROM cursos "
                 + "WHERE empresa_codigo = ? AND fecha_inicio IS NOT NULL ORDER BY revision DESC";

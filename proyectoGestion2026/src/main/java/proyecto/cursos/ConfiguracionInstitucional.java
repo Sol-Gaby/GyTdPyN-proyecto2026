@@ -15,9 +15,13 @@ import org.springframework.context.annotation.Configuration;
 public class ConfiguracionInstitucional {
     private static final Logger LOG = Logger.getLogger(ConfiguracionInstitucional.class.getName());
 
+    @Bean
+    ProyeccionInstitucional proyeccionInstitucional() {
+        return ProyeccionInstitucional.desdeEntorno();
+    }
+
     @Bean(destroyMethod = "shutdown")
-    ScheduledExecutorService sincronizadorInstitucional() {
-        ProyeccionInstitucional proyeccion = ProyeccionInstitucional.desdeEntorno();
+    ScheduledExecutorService sincronizadorInstitucional(ProyeccionInstitucional proyeccion) {
         ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(tarea -> {
             Thread hilo = new Thread(tarea, "proyeccion-institucional");
             hilo.setDaemon(true);

@@ -14,13 +14,14 @@ function nodo(etiqueta, texto) {
 }
 
 async function api(ruta, metodo = 'GET', datos, credencial = auth) {
-    const headers = {};
+    const headers = {'X-Requested-With': 'XMLHttpRequest'};
     if (credencial) headers.Authorization = credencial;
     if (datos !== undefined) headers['Content-Type'] = 'application/json';
     const r = await fetch('api/' + ruta, { method: metodo, headers, body: datos === undefined ? undefined : JSON.stringify(datos) });
     if (!r.ok) {
         const detalle = await r.json().catch(() => ({}));
-        throw new Error(detalle.error || detalle.message || 'La operación devolvió HTTP ' + r.status);
+        throw new Error(detalle.error || detalle.message || (r.status === 401
+            ? 'Credenciales inválidas.' : 'La operación devolvió HTTP ' + r.status));
     }
     if (r.status === 204) return;
     if (r.headers.get('Content-Type')?.includes('application/pdf')) return r.blob();
@@ -37,6 +38,7 @@ registro.addEventListener('submit', async e => {
             ...Object.fromEntries(new FormData(registro)), solicitudId: referencia
         }, null);
         aviso.textContent = 'Solicitud registrada. Instancia ' + resultado.processInstanceId
+            + '. Referencia ' + resultado.referenciaSolicitud
             + '. Usuario para el seguimiento después de aceptar: ' + resultado.usuarioEmpresa;
         referencia = crypto.randomUUID();
         registro.reset();

@@ -1,5 +1,7 @@
 # Version2 — Revisión de los adjuntos e integración con Flowable
 
+La revisión integrada continúa en [Predefinitiva.md](Predefinitiva.md), con el arranque, las credenciales, las pruebas y el informe de cumplimiento.
+
 Esta rama parte de `version1` en `caa9880`. El archivo actualizado `docs/diagrama_cursos.bpmn` usa identificadores generados por Camunda Modeler y extensiones Zeebe (Camunda Cloud). Representa el flujo de negocio y queda como referencia. El modelo ejecutable para la instalación es `src/main/resources/processes/organizacion-cursos.bpmn20.xml`. Conserva la clave `Process_Curso`, sus mensajes y sus IDs de actividad para mantener compatibilidad con las definiciones e historial ya desplegados. En Flowable Modeler importá ese XML para ver la implementación. La [guía anterior](Puntos-2-y-3.md#ver-el-diagrama-en-flowable-modeler) muestra los botones.
 
 ## Revisión individual de los 20 Java adjuntos

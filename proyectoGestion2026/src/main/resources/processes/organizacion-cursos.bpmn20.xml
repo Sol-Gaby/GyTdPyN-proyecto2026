@@ -19,7 +19,7 @@
   <bpmn:message id="Msg_informe" name="Informe de resultados"/>
   <bpmn:message id="Msg_equipo_liberado" name="Liberación de equipamiento completada"/>
   <bpmn:process id="Process_Curso" name="Organizar curso de capacitación" isExecutable="true">
-    <bpmn:documentation>Modelo conceptual, no ejecutable. Los recordatorios se cuentan por versión de propuesta. La fecha programada se obtiene de la propuesta aceptada. Para cada participante se espera una respuesta de encuesta; el enunciado no fija un vencimiento. La empresa se representa como pool de caja negra; los mensajes internos del subproceso se expresan con tareas de envío/recepción y eventos de mensaje.</bpmn:documentation>
+    <bpmn:documentation>Modelo ejecutable en Flowable. TareasCurso controla asignación, reclamo y finalización. EstadoCurso encola el registro inicial, las revisiones y el resultado del proceso. Los recordatorios se cuentan por propuesta y la fecha programada se obtiene de la aceptación.</bpmn:documentation>
     <bpmn:extensionElements>
       <ns0:executionListener xmlns:ns0="http://flowable.org/bpmn" event="start" class="proyecto.cursos.EstadoCurso"/>
       <ns1:executionListener xmlns:ns1="http://flowable.org/bpmn" event="end" class="proyecto.cursos.EstadoCurso"/>

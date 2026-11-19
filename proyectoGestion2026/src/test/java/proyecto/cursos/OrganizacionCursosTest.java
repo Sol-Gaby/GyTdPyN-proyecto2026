@@ -48,15 +48,15 @@ class OrganizacionCursosTest {
         dmn = new DmnEngineConfigurator();
         configuracion.addConfigurator(dmn);
         motor = configuracion.buildProcessEngine();
-        Path esquema = Path.of("..", "flowable-cursos", "sql", "01-estructura.sql");
+        Path esquema = Path.of("..", "flowable-cursos", "sql", "institucion.sql");
         if (!Files.isRegularFile(esquema)) {
-            esquema = Path.of("flowable-cursos", "sql", "01-estructura.sql");
+            esquema = Path.of("flowable-cursos", "sql", "institucion.sql");
         }
-        String cola = Files.readString(esquema).split("SELECT 'CREATE DATABASE", 2)[0];
+        String archivo = Files.readString(esquema);
+        String cola = archivo.substring(archivo.indexOf("BEGIN;") + "BEGIN;".length(), archivo.indexOf("COMMIT;"));
         try (Connection conexion = configuracion.getDataSource().getConnection();
                 var ddl = conexion.createStatement()) {
             ddl.execute(cola);
-            ddl.execute(Files.readString(esquema.resolveSibling("03-portal.sql")).split(java.util.regex.Pattern.quote("\\connect"), 2)[0]);
         }
         InstalarCursos.crearPersonal(EngineServiceUtil.getIdmIdentityService(configuracion), "clave-didactica");
         InstalarCursos.crearPersonal(EngineServiceUtil.getIdmIdentityService(configuracion), "clave-didactica");
@@ -78,12 +78,22 @@ class OrganizacionCursosTest {
     }
 
     @Test
-    void solicitudWebReservaUnaReferenciaUnica() {
+    void solicitudWebReservaUnaReferenciaUnica() throws Exception {
         Map<String, Object> datos = Map.of("solicitudWeb", "{\"cursoNombre\":\"BPMN\"}", "empresaCodigo", "EMP-WEB");
         String referencia = "web-" + java.util.UUID.randomUUID();
         String instancia = motor.getRuntimeService()
                 .startProcessInstanceByMessage("Solicitud de curso", referencia, datos).getId();
         assertEquals("EN_TRAMITE", estadoInstitucional(instancia));
+        try (Connection conexion = configuracion.getDataSource().getConnection();
+                var consulta = conexion.prepareStatement(
+                        "SELECT solicitud_referencia, solicitud_web FROM cursos_pendientes WHERE proceso_id = ?")) {
+            consulta.setString(1, instancia);
+            try (var evento = consulta.executeQuery()) {
+                assertTrue(evento.next());
+                assertEquals(referencia, evento.getString("solicitud_referencia"));
+                assertEquals(datos.get("solicitudWeb"), evento.getString("solicitud_web"));
+            }
+        }
         assertThrows(FlowableException.class, () -> motor.getRuntimeService()
                 .startProcessInstanceByMessage("Solicitud de curso", referencia, datos));
     }
