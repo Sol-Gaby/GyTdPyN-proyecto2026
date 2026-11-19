@@ -29,7 +29,13 @@ services:
       PGPASSWORD: ${POSTGRES_PASSWORD:?Definí POSTGRES_PASSWORD en .env}
     volumes:
       - ./sql:/sql:ro
-    command: ["psql", "-v", "ON_ERROR_STOP=1", "-f", "/sql/01-estructura.sql", "-f", "/sql/02-datos-demostracion.sql", "-f", "/sql/03-portal.sql"]
+    command:
+      - sh
+      - -ec
+      - |
+        psql -v ON_ERROR_STOP=1 -f /sql/01-estructura.sql -f /sql/02-datos-demostracion.sql
+        # Nueva sesión en PGDATABASE: los scripts anteriores cambian a institucion_cursos.
+        exec psql -v ON_ERROR_STOP=1 -f /sql/03-portal.sql
 
   flowable:
     build:
