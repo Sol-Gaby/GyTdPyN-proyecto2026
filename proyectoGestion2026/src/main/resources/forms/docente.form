@@ -1,0 +1,12 @@
+{
+  "key": "cursos-docente",
+  "name": "Docente del curso",
+  "fields": [
+    {"id": "docenteAsignado", "name": "Docente", "type": "dropdown", "fieldType": "OptionFormField", "optionType": "static", "required": true,
+     "options": [
+       {"id": "jefeDocente", "name": "Jefatura docente"},
+       {"id": "docente1", "name": "Docente 1"},
+       {"id": "docente2", "name": "Docente 2"}
+     ]}
+  ]
+}

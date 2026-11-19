@@ -1,0 +1,7 @@
+{
+  "key": "cursos-informe",
+  "name": "Informe de resultados",
+  "fields": [
+    {"id": "informeResultados", "name": "Informe de resultados", "type": "multi-line-text", "required": true}
+  ]
+}

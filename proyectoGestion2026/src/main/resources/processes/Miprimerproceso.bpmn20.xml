@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" targetNamespace="proyecto.cursos.pruebas">
+  <process id="miprimerproceso" name="Ejemplo de la cátedra" isExecutable="true">
+    <startEvent id="inicio"/>
+    <sequenceFlow id="aOrden" sourceRef="inicio" targetRef="registrarOrden"/>
+    <userTask id="registrarOrden" name="Registrar orden"/>
+    <sequenceFlow id="aFin" sourceRef="registrarOrden" targetRef="fin"/>
+    <endEvent id="fin"/>
+  </process>
+</definitions>

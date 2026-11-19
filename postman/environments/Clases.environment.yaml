@@ -2,4 +2,10 @@ name: Clases
 values:
   - key: baseUrl
     value: ''
+  - key: instanciaId
+    value: ''
+  - key: tareaId
+    value: ''
+  - key: ejecucionId
+    value: ''
 color: 180
