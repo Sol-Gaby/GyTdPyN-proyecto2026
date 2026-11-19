@@ -42,6 +42,7 @@ public class OperacionesCurso implements JavaDelegate {
                 break;
             case "Activity_1eg7zcl":
                 validarFecha(execution);
+                execution.setVariable("accesoEmpresaHabilitado", true);
                 execution.setVariable("preparacionCancelada", false);
                 execution.setVariable("equipamientoGestionado", false);
                 execution.setVariable("equipamientoLiberado", false);

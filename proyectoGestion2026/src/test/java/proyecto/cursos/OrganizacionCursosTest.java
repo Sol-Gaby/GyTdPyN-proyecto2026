@@ -56,6 +56,7 @@ class OrganizacionCursosTest {
         try (Connection conexion = configuracion.getDataSource().getConnection();
                 var ddl = conexion.createStatement()) {
             ddl.execute(cola);
+            ddl.execute(Files.readString(esquema.resolveSibling("03-portal.sql")).split(java.util.regex.Pattern.quote("\\connect"), 2)[0]);
         }
         InstalarCursos.crearPersonal(EngineServiceUtil.getIdmIdentityService(configuracion), "clave-didactica");
         InstalarCursos.crearPersonal(EngineServiceUtil.getIdmIdentityService(configuracion), "clave-didactica");
@@ -74,6 +75,17 @@ class OrganizacionCursosTest {
         if (motor != null) {
             motor.close();
         }
+    }
+
+    @Test
+    void solicitudWebReservaUnaReferenciaUnica() {
+        Map<String, Object> datos = Map.of("solicitudWeb", "{\"cursoNombre\":\"BPMN\"}", "empresaCodigo", "EMP-WEB");
+        String referencia = "web-" + java.util.UUID.randomUUID();
+        String instancia = motor.getRuntimeService()
+                .startProcessInstanceByMessage("Solicitud de curso", referencia, datos).getId();
+        assertEquals("EN_TRAMITE", estadoInstitucional(instancia));
+        assertThrows(FlowableException.class, () -> motor.getRuntimeService()
+                .startProcessInstanceByMessage("Solicitud de curso", referencia, datos));
     }
 
     @Test

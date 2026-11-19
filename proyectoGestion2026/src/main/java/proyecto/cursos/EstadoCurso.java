@@ -9,6 +9,7 @@ import java.util.Date;
 import java.util.Set;
 
 import org.flowable.common.engine.api.FlowableException;
+import org.flowable.common.engine.api.delegate.Expression;
 import org.flowable.engine.delegate.DelegateExecution;
 import org.flowable.engine.delegate.ExecutionListener;
 import org.flowable.engine.impl.util.CommandContextUtil;
@@ -19,22 +20,37 @@ public class EstadoCurso implements ExecutionListener {
     private static final Set<String> CIERRES = Set.of(
             "FINALIZADO", "CANCELADO", "RECHAZADO", "SIN_RESPUESTA", "NO_VIABLE");
 
+    private Expression tipoDocumento;
+
     @Override
     public void notify(DelegateExecution execution) {
         if (EVENTNAME_START.equals(execution.getEventName()) || EVENTNAME_TAKE.equals(execution.getEventName())) {
-            registrar(execution, "EN_TRAMITE");
+            if (EVENTNAME_START.equals(execution.getEventName()) && execution.getVariable("solicitudWeb") != null) {
+                registrarReferencia(execution);
+            }
+            registrar(execution, "EN_TRAMITE", tipoDocumento == null ? null : (String) tipoDocumento.getValue(execution));
         } else {
             Object resultado = execution.getVariable("resultado");
             if (execution.isEnded() && resultado instanceof String && CIERRES.contains(resultado)) {
-                registrar(execution, (String) resultado);
+                registrar(execution, (String) resultado, null);
             }
         }
     }
 
-    static void registrar(DelegateExecution execution, String estado) {
+    private void registrarReferencia(DelegateExecution execution) {
+        try (PreparedStatement insert = CommandContextUtil.getDbSqlSession().getSqlSession().getConnection()
+                .prepareStatement("INSERT INTO referencias_portal (referencia) VALUES (?)")) {
+            insert.setString(1, execution.getProcessInstanceBusinessKey());
+            insert.executeUpdate();
+        } catch (SQLException ex) {
+            throw new FlowableException("No se pudo registrar la referencia única de la solicitud", ex);
+        }
+    }
+
+    private void registrar(DelegateExecution execution, String estado, String documento) {
         String sql = "INSERT INTO cursos_pendientes (proceso_id, codigo_empresa, nombre_empresa, nombre_curso, "
-                + "descripcion, programa, presupuesto, fechas_posibles, fecha_inicio, informe, estado) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                + "descripcion, programa, presupuesto, fechas_posibles, fecha_inicio, informe, estado, solicitud_web, documento_tipo, habilitar_empresa) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement insert = CommandContextUtil.getDbSqlSession().getSqlSession().getConnection()
                 .prepareStatement(sql)) {
             String codigo = texto(execution, "empresaCodigo", "DEMO");
@@ -53,6 +69,9 @@ public class EstadoCurso implements ExecutionListener {
             insert.setObject(9, fecha(execution.getVariable("fechaCurso")));
             insert.setString(10, texto(execution, "informeResultados", null));
             insert.setString(11, estado);
+            insert.setString(12, texto(execution, "solicitudWeb", null));
+            insert.setString(13, documento);
+            insert.setBoolean(14, Boolean.TRUE.equals(execution.getVariable("accesoEmpresaHabilitado")));
             insert.executeUpdate();
         } catch (SQLException ex) {
             throw new FlowableException("No se pudo encolar el estado institucional del curso", ex);

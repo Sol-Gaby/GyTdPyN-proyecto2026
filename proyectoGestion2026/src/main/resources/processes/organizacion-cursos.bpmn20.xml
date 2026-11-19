@@ -102,7 +102,9 @@
     </bpmn:intermediateCatchEvent>
     <bpmn:sequenceFlow id="main3" sourceRef="Enviar" targetRef="Esperar">
       <bpmn:extensionElements>
-        <ns0:executionListener xmlns:ns0="http://flowable.org/bpmn" event="take" class="proyecto.cursos.EstadoCurso"/>
+        <ns0:executionListener xmlns:ns0="http://flowable.org/bpmn" event="take" class="proyecto.cursos.EstadoCurso">
+          <ns0:field name="tipoDocumento" stringValue="PROPUESTA"/>
+        </ns0:executionListener>
       </bpmn:extensionElements>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="VolverEsperar" sourceRef="Recordatorio" targetRef="Esperar"/>
@@ -373,7 +375,9 @@
     </bpmn:userTask>
     <bpmn:sequenceFlow id="InformeEnviar" sourceRef="Informe" targetRef="EnviarInforme">
       <bpmn:extensionElements>
-        <ns3:executionListener xmlns:ns3="http://flowable.org/bpmn" event="take" class="proyecto.cursos.EstadoCurso"/>
+        <ns3:executionListener xmlns:ns3="http://flowable.org/bpmn" event="take" class="proyecto.cursos.EstadoCurso">
+          <ns3:field name="tipoDocumento" stringValue="INFORME"/>
+        </ns3:executionListener>
       </bpmn:extensionElements>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="InformeArchivar" sourceRef="EnviarInforme" targetRef="CompensarPreparacion"/>

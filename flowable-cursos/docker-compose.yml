@@ -29,7 +29,7 @@ services:
       PGPASSWORD: ${POSTGRES_PASSWORD:?Definí POSTGRES_PASSWORD en .env}
     volumes:
       - ./sql:/sql:ro
-    command: ["psql", "-v", "ON_ERROR_STOP=1", "-f", "/sql/01-estructura.sql", "-f", "/sql/02-datos-demostracion.sql"]
+    command: ["psql", "-v", "ON_ERROR_STOP=1", "-f", "/sql/01-estructura.sql", "-f", "/sql/02-datos-demostracion.sql", "-f", "/sql/03-portal.sql"]
 
   flowable:
     build:
@@ -46,6 +46,8 @@ services:
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-flowable}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Definí POSTGRES_PASSWORD en .env}
       CURSOS_INSTITUCION_JDBC_URL: jdbc:postgresql://database:5432/institucion_cursos
+      CURSOS_REST_USUARIO: ${CURSOS_REST_USUARIO:-admin}
+      CURSOS_REST_CLAVE: ${CURSOS_REST_CLAVE:-test}
       FLOWABLE_HISTORY_LEVEL: audit
       FLOWABLE_CHECK_PROCESS_DEFINITIONS: "false"
       FLOWABLE_FORM_DEPLOY_RESOURCES: "false"
