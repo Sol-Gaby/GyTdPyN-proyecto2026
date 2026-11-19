@@ -5,6 +5,10 @@ import java.util.Comparator;
 import java.util.Set;
 
 import org.flowable.common.engine.api.FlowableException;
+import org.flowable.common.engine.api.FlowableForbiddenException;
+import org.flowable.common.engine.impl.identity.Authentication;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.flowable.engine.delegate.TaskListener;
 import org.flowable.engine.RuntimeService;
 import org.flowable.engine.runtime.Execution;
@@ -17,6 +21,8 @@ public class TareasCurso implements TaskListener {
     private static final long serialVersionUID = 1L;
     public static final String ADMINISTRACION = "administracion";
     public static final String DOCENTES = "docentes";
+    private static final String RESPONSABLE = "cursosResponsable";
+    private static final String SIN_RESPONSABLE = "";
     private static final Set<String> TAREAS_ADMINISTRACION = Set.of(
             "Material", "Activity_12i2hpf", "Virtual", "Equipo", "Activity_1m08pcl");
 
@@ -24,16 +30,24 @@ public class TareasCurso implements TaskListener {
     public void notify(DelegateTask task) {
         ProcessEngineConfigurationImpl motor = CommandContextUtil.getProcessEngineConfiguration();
         if (EVENTNAME_CREATE.equals(task.getEventName())) {
-            asignarLista(task, motor);
+            if ("Lista".equals(task.getTaskDefinitionKey())) {
+                asignarLista(task, motor);
+            }
+            task.setVariableLocal(RESPONSABLE, task.getAssignee() == null ? SIN_RESPONSABLE : task.getAssignee());
+            return;
+        }
+        if (EVENTNAME_ASSIGNMENT.equals(task.getEventName())) {
+            validarAsignacion(task, motor);
             return;
         }
         if (task.getAssignee() == null) {
-            throw new FlowableException("La tarea debe reclamarse antes de completarla");
+            throw new FlowableForbiddenException("La tarea debe reclamarse antes de completarla");
         }
-        if (TAREAS_ADMINISTRACION.contains(task.getTaskDefinitionKey())
-                && motor.getIdentityService().createUserQuery().memberOfGroup(ADMINISTRACION)
-                        .userId(task.getAssignee()).count() != 1) {
-            throw new FlowableException("La persona asignada debe pertenecer a Administración");
+        if (!task.getAssignee().equals(usuarioActual())) {
+            throw new FlowableForbiddenException("Solo el responsable puede completar la tarea");
+        }
+        if (TAREAS_ADMINISTRACION.contains(task.getTaskDefinitionKey()) && !esAdministrativo(motor, task.getAssignee())) {
+            throw new FlowableForbiddenException("La persona asignada debe pertenecer a Administración");
         }
         switch (task.getTaskDefinitionKey()) {
             case "Propuesta":
@@ -75,6 +89,42 @@ public class TareasCurso implements TaskListener {
             default:
                 break;
         }
+    }
+
+    private void validarAsignacion(DelegateTask tarea, ProcessEngineConfigurationImpl motor) {
+        Object anterior = tarea.getVariableLocal(RESPONSABLE);
+        if (anterior == null) {
+            return; // Asignación inicial del BPMN o del listener que crea la lista.
+        }
+        String actual = tarea.getAssignee();
+        if (!TAREAS_ADMINISTRACION.contains(tarea.getTaskDefinitionKey())) {
+            if (!anterior.equals(actual)) {
+                throw new FlowableForbiddenException("La tarea está asignada directamente y no admite reclamo ni reasignación");
+            }
+            return;
+        }
+        String usuario = usuarioActual();
+        if (actual == null && anterior.equals(usuario) && usuario != null) {
+            tarea.setVariableLocal(RESPONSABLE, SIN_RESPONSABLE);
+            return;
+        }
+        if (!SIN_RESPONSABLE.equals(anterior) || actual == null || !actual.equals(usuario)
+                || !esAdministrativo(motor, actual)) {
+            throw new FlowableForbiddenException("Solo un integrante de Administración puede reclamar para sí una tarea sin asignar");
+        }
+        tarea.setVariableLocal(RESPONSABLE, actual);
+    }
+
+    private boolean esAdministrativo(ProcessEngineConfigurationImpl motor, String usuario) {
+        return motor.getIdentityService().createUserQuery().memberOfGroup(ADMINISTRACION).userId(usuario).count() == 1;
+    }
+
+    private String usuarioActual() {
+        var autenticado = SecurityContextHolder.getContext().getAuthentication();
+        if (autenticado != null && autenticado.isAuthenticated() && !(autenticado instanceof AnonymousAuthenticationToken)) {
+            return autenticado.getName();
+        }
+        return Authentication.getAuthenticatedUserId();
     }
 
     private void reanudarCancelacion(DelegateTask tarea, RuntimeService runtime) {

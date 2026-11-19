@@ -5,6 +5,7 @@ import org.flowable.engine.ProcessEngine;
 import org.flowable.engine.ProcessEngineConfiguration;
 import org.flowable.engine.impl.cfg.ProcessEngineConfigurationImpl;
 import org.flowable.engine.impl.util.EngineServiceUtil;
+import org.flowable.form.engine.configurator.FormEngineConfigurator;
 import org.flowable.idm.api.Group;
 import org.flowable.idm.api.IdmIdentityService;
 import org.flowable.idm.api.Privilege;
@@ -28,9 +29,15 @@ public class InstalarCursos {
 
         DmnEngineConfigurator dmn = new DmnEngineConfigurator();
         configuracion.addConfigurator(dmn);
+        FormEngineConfigurator formularios = new FormEngineConfigurator();
+        configuracion.addConfigurator(formularios);
         ProcessEngine motor = configuracion.buildProcessEngine();
         try {
             crearPersonal(EngineServiceUtil.getIdmIdentityService(configuracion), clavePersonal);
+            formularios.getFormEngineConfiguration().getFormRepositoryService()
+                    .createDeployment().name("Formularios de cursos").enableDuplicateFiltering()
+                    .addClasspathResource("forms/propuesta.form").addClasspathResource("forms/recursos.form")
+                    .addClasspathResource("forms/docente.form").addClasspathResource("forms/informe.form").deploy();
             String despliegue = desplegar(motor, dmn, true);
             System.out.println("Process_Curso disponible. Despliegue BPMN: " + despliegue);
         } finally {

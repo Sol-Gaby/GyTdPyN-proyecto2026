@@ -1,0 +1,9 @@
+{
+  "key": "cursos-propuesta",
+  "name": "Propuesta del curso",
+  "fields": [
+    {"id": "programa", "name": "Programa", "type": "multi-line-text", "required": true},
+    {"id": "presupuesto", "name": "Presupuesto", "type": "integer", "required": true},
+    {"id": "fechasPosibles", "name": "Fechas posibles", "type": "text", "required": true}
+  ]
+}

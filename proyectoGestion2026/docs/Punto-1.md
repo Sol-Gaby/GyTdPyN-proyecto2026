@@ -50,82 +50,10 @@ El BPMN original de la cátedra está en `docs/Proyecto_Organizacion_cursos_1684
 3. Buscá `BUILD SUCCESS`, con cero errores y cero fallos. Si preferís ejecutar solo el flujo de cursos desde el editor, abrí `src/test/java/proyecto/cursos/OrganizacionCursosTest.java` y usá el triángulo al lado de la clase.
 4. Las pruebas crean su propia base H2, inicializan el motor BPMN/DMN y adelantan su reloj. La espera de cinco días se comprueba sin esperar cinco días reales. `ejemploMinimoDespliegaYCompletaUnaTarea` cubre el archivo elemental del ejercicio, y las demás pruebas recorren el modelo de cursos.
 
-## Probar manualmente con Postman
+## Probar manualmente con Postman y Flowable UI
 
-Armá una colección con `baseUrl = http://localhost:8082/flowable-ui/process-api`. Configurá **Authorization → Basic Auth** con `admin` / `test` para la demostración del motor. Las tareas de usuario también pueden verse en Flowable Task con las respectivas cuentas. En las peticiones POST y PUT elegí **Body → raw → JSON**.
-
-### Crear la solicitud y enviar una propuesta
-
-1. `POST {{baseUrl}}/runtime/process-instances`.
-
-   ```json
-   {
-     "message": "Solicitud de curso",
-     "businessKey": "CURSO-DEMO-01",
-     "variables": [{ "name": "plazoRespuesta", "type": "string", "value": "PT45S" }]
-   }
-   ```
-
-   Guardá el `id` de la respuesta como `instanciaId`. Cuando omitas `plazoRespuesta`, se aplica `P5D`. Probá con un plazo mayor que 45 segundos si estás operando de forma manual y querés tomarte tiempo.
-
-2. `GET {{baseUrl}}/runtime/tasks?processInstanceId={{instanciaId}}`. Buscá `taskDefinitionKey = Propuesta`, asignada a `jefeAdmin`. Copiá el `id` de **esa tarea**.
-3. `POST {{baseUrl}}/runtime/tasks/{{tareaId}}`. Completá con esta información. El motor envía la propuesta simulada e instala las tres esperas de mensaje y el temporizador.
-
-   ```json
-   {
-     "action": "complete",
-     "variables": [
-       { "name": "programa", "type": "string", "value": "Introducción a BPMN" },
-       { "name": "presupuesto", "type": "integer", "value": 1000 },
-       { "name": "fechasPosibles", "type": "string", "value": "Semana próxima, por la mañana" }
-     ]
-   }
-   ```
-
-### Responder a la propuesta y preparar el curso
-
-1. Buscá la ejecución con `GET {{baseUrl}}/runtime/executions`. En **Params**, agregá `processInstanceId = {{instanciaId}}` y `messageEventSubscriptionName = Aceptación`. Copiá `data[0].id` como `ejecucionId`.
-2. `PUT {{baseUrl}}/runtime/executions/{{ejecucionId}}` con el siguiente cuerpo. Reemplazá la fecha por una fecha y hora futura cercana de tu prueba, manteniendo la zona horaria.
-
-   ```json
-   {
-     "action": "messageEventReceived",
-     "messageName": "Aceptación",
-     "variables": [{ "name": "fechaCurso", "type": "string", "value": "2027-01-15T10:00:00-03:00" }]
-   }
-   ```
-
-3. Consultá de nuevo las tareas. Mientras el proceso espera `Nómina de participantes`, aparecen **Preparar materiales** y **Evaluar recursos**. En cada tarea compartida, reclamá primero con `POST /runtime/tasks/{id}` y `{"action":"claim","assignee":"adminCursos"}`. Después completá con `{"action":"complete"}` o con las variables del paso.
-4. En **Evaluar recursos** enviá `requiereAula`, `requierePlataforma` y `requiereEquipamiento` como booleanos. Ejemplo con aula física y equipamiento:
-
-   ```json
-   {
-     "action": "complete",
-     "variables": [
-       { "name": "requiereAula", "type": "boolean", "value": true },
-       { "name": "requierePlataforma", "type": "boolean", "value": false },
-       { "name": "requiereEquipamiento", "type": "boolean", "value": true }
-     ]
-   }
-   ```
-
-5. Entregá la nómina con el mismo par GET/PUT del paso 1, buscando ahora el mensaje `Nómina de participantes`. El PUT lleva `messageName = Nómina de participantes` y una variable de texto `nomina`, por ejemplo `["Ana","Pablo"]` como valor de una cadena JSON. El motor crea **Confeccionar lista definitiva** y la asigna al administrativo con menos tareas pendientes.
-6. Completá la lista, los materiales y todas las tareas de recursos seleccionados. Solo entonces aparece **Definir docente**. Completala con la variable de texto `docenteAsignado`, por ejemplo `jefeDocente`. A la fecha acordada aparece **Desarrollar curso** para esa persona. Completá el dictado, **Elaborar informe** con la referencia de texto `informeResultados`, y **Enviar informe y archivar**.
-7. Si se contrató equipamiento, aparece **Liberar equipamiento** y la instancia sigue activa hasta completar esa tarea. Consultá el resultado en `GET {{baseUrl}}/history/historic-variable-instances?processInstanceId={{instanciaId}}&variableName=resultado`. Esperá `FINALIZADO`.
-
-### Pruebas adicionales
-
-| Caso | Qué hacer | Qué observar |
-|---|---|---|
-| Capacidad | Iniciá seis solicitudes consecutivas sin cerrar las anteriores en una base de prueba limpia. | Las cinco primeras avanzan a propuesta y la sexta termina `NO_VIABLE`. |
-| Revisión | En negociación, entregá `Solicitud de modificaciones` con `observaciones`. Completá **Revisar propuesta** y consultá variables. | `versionPropuesta` aumenta, `recordatorios` vuelve a cero y reaparecen las esperas. |
-| Rechazo | Entregá el mensaje `Rechazo` durante la negociación. Completá **Archivar solicitud**. | El histórico muestra `RECHAZADO`. |
-| Silencio | Iniciá con `plazoRespuesta = PT5S`, enviá la propuesta y dejá correr los temporizadores. | Se registran dos recordatorios y, en el tercer vencimiento, aparece **Archivar solicitud**. Al completarla, queda `SIN_RESPUESTA`. |
-| Selección inválida | Completá **Evaluar recursos** con las tres opciones en falso. | La operación falla y la tarea sigue disponible para corregir. |
-| Aula no disponible | Completá la evaluación con `requiereAula = true` y `aulaDisponible = false`. | El motor devuelve `AULA_NO_DISPONIBLE`, no registra una reserva y permite repetir la evaluación. |
-| Cancelación con equipo | Aceptá, contratá equipo y dejá la nómina pendiente. Entregá `Cancelación`. Luego reclamá y completá **Liberar equipamiento**. | La espera de nómina desaparece. El motor espera la liberación y el ejecutor asíncrono cierra como `CANCELADO`. |
-| Cancelación sin equipo | Aceptá, seleccioná equipo y cancelá antes de contratarlo. | Termina como `CANCELADO` sin crear una tarea de liberación de equipo. |
-
+La [guía de puntos 2 y 3](Puntos-2-y-3.md#postman) actualiza el recorrido manual de este punto. El usuario técnico `admin` puede enviar comunicaciones y consultar instancias. Las tareas se reclaman y completan con la sesión del responsable.
+ 
 ## Cambios de diseño y código
 
 - **`organizacion-cursos.bpmn20.xml`.** A partir del material de la cátedra se agregó el conteo previo, se vinculó la tarea de decisión con el DMN, se completaron mensajes y condiciones y se conservaron las uniones AND/OR. La nómina ahora es un evento de captura para identificar su suscripción por REST. Las asignaciones se expresan en el modelo, con un listener para la lista definitiva.

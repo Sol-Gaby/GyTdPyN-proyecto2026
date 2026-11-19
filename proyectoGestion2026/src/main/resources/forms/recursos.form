@@ -1,0 +1,9 @@
+{
+  "key": "cursos-recursos",
+  "name": "Recursos del curso",
+  "fields": [
+    {"id": "requiereAula", "name": "Aula física", "type": "boolean"},
+    {"id": "requierePlataforma", "name": "Aula virtual", "type": "boolean"},
+    {"id": "requiereEquipamiento", "name": "Equipamiento especial", "type": "boolean"}
+  ]
+}
