@@ -119,13 +119,13 @@ class OrganizacionCursosTest {
         iniciar();
         iniciar();
         String quinto = iniciar();
-        assertEquals(4L, variable(quinto, "cantidadOtrosCursos"));
+        assertEquals(4L, variable(quinto, "totalCursosVigentes"));
         assertEquals("jefeAdmin", tarea(quinto, "Propuesta").getAssignee());
         String sexto = iniciar();
         assertFalse(activa(sexto));
-        assertEquals("NO_VIABLE", historica(sexto, "resultado"));
+        assertEquals("NO_VIABLE", historica(sexto, "estadoFinal"));
         assertEquals("NO_VIABLE", estadoInstitucional(sexto));
-        assertEquals(5L, historica(sexto, "cantidadOtrosCursos"));
+        assertEquals(5L, historica(sexto, "totalCursosVigentes"));
     }
 
     @Test
@@ -133,17 +133,17 @@ class OrganizacionCursosTest {
         String id = negociar();
         Job primerPlazo = temporizador(id);
         vencer(primerPlazo);
-        assertEquals(1, variable(id, "recordatorios"));
+        assertEquals(1, variable(id, "intentosRecordatorio"));
         assertThrows(FlowableException.class, () -> mensaje(id, "Solicitud de modificaciones", Map.of()));
         mensaje(id, "Solicitud de modificaciones", Map.of("observaciones", "Agregar prácticas"));
         completar(id, "Revisar", PROPUESTA);
         assertEquals(2, variable(id, "versionPropuesta"));
-        assertEquals(0, variable(id, "recordatorios"));
+        assertEquals(0, variable(id, "intentosRecordatorio"));
         assertThrows(FlowableException.class, () -> mensaje(id, "Aceptación", Map.of("fechaCurso", "pronto")));
         mensaje(id, "Rechazo", Map.of());
         assertEquals("jefeAdmin", tarea(id, "Archivar").getAssignee());
         completar(id, "Archivar", Map.of());
-        assertEquals("RECHAZADO", historica(id, "resultado"));
+        assertEquals("RECHAZADO", historica(id, "estadoFinal"));
         assertEquals("RECHAZADO", estadoInstitucional(id));
     }
 
@@ -156,9 +156,9 @@ class OrganizacionCursosTest {
         assertNotNull(espera(id, "Aceptación"));
         vencer(temporizador(id));
         assertNull(espera(id, "Aceptación"));
-        assertEquals(2, variable(id, "recordatorios"));
+        assertEquals(2, variable(id, "intentosRecordatorio"));
         completar(id, "Archivar", Map.of());
-        assertEquals("SIN_RESPUESTA", historica(id, "resultado"));
+        assertEquals("SIN_RESPUESTA", historica(id, "estadoFinal"));
         assertEquals("SIN_RESPUESTA", estadoInstitucional(id));
     }
 
@@ -207,7 +207,7 @@ class OrganizacionCursosTest {
         assertNotNull(tarea(id, "Activity_1m08pcl"));
         reclamarYCompletar(id, "Activity_1m08pcl", Map.of());
         assertFalse(activa(id), () -> estado(id));
-        assertEquals("FINALIZADO", historica(id, "resultado"));
+        assertEquals("FINALIZADO", historica(id, "estadoFinal"));
         assertEquals("FINALIZADO", estadoInstitucional(id));
         assertEquals(true, historica(id, "aulaLiberada"));
         assertEquals(true, historica(id, "aulaVirtualLiberada"));
@@ -243,7 +243,7 @@ class OrganizacionCursosTest {
         assertFalse(activa(id), () -> estado(id));
         assertEquals(true, historica(id, "preparacionCancelada"));
         assertEquals("Cancelación comunicada a la empresa", historica(id, "ultimoAvisoEmpresa"));
-        assertEquals("CANCELADO", historica(id, "resultado"));
+        assertEquals("CANCELADO", historica(id, "estadoFinal"));
         assertEquals("CANCELADO", estadoInstitucional(id));
         assertEquals(true, historica(id, "aulaLiberada"));
         assertEquals(true, historica(id, "equipamientoLiberado"));
@@ -262,7 +262,7 @@ class OrganizacionCursosTest {
         assertEquals(true, variable(id, "aulaVirtualLiberada"));
         assertNull(variable(id, "aulaLiberada"));
         completar(id, "VerificarCompensaciones", Map.of());
-        assertEquals("CANCELADO", historica(id, "resultado"));
+        assertEquals("CANCELADO", historica(id, "estadoFinal"));
     }
 
     @Test
@@ -276,7 +276,7 @@ class OrganizacionCursosTest {
         assertNull(variable(id, "aulaVirtualLiberada"));
         completar(id, "VerificarCompensaciones", Map.of());
         assertFalse(activa(id), () -> estado(id));
-        assertEquals("CANCELADO", historica(id, "resultado"));
+        assertEquals("CANCELADO", historica(id, "estadoFinal"));
         assertEquals("CANCELADO", estadoInstitucional(id));
         assertEquals(false, historica(id, "equipamientoLiberado"));
     }

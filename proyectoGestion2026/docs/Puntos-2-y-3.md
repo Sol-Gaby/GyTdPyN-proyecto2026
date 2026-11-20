@@ -148,18 +148,18 @@ Con `jefeDocente`, enviá **Definir docente** con `values = {"docenteAsignado":"
 
 | Requisito | Qué buscar en Flowable y Postman | Qué verificar por CMD |
 |---|---|---|
-| **3.1 Viabilidad** | En una base de prueba sin otras instancias de cursos, iniciá seis solicitudes sin cerrar las anteriores. Las cinco primeras tienen **Propuesta** en Task, la sexta termina. Buscá `cantidadOtrosCursos` y `resultado` en el historial. | Las pruebas Maven verifican `4 → viable`, `5 → NO_VIABLE` y conteo entre dos versiones. En PostgreSQL, la fila de la sexta muestra `NO_VIABLE`. |
+| **3.1 Viabilidad** | En una base de prueba sin otras instancias de cursos, iniciá seis solicitudes sin cerrar las anteriores. Las cinco primeras tienen **Propuesta** en Task, la sexta termina. Buscá `totalCursosVigentes` y `resultado` en el historial. | Las pruebas Maven verifican `4 → cursoViable`, `5 → NO_VIABLE` y conteo entre dos versiones. En PostgreSQL, la fila de la sexta muestra `NO_VIABLE`. |
 | **3.2 Base institucional** | Al iniciar, guardá el `instanciaId` de la respuesta REST. Usá ese ID para consultar la misma instancia en Flowable Admin. | Consultá `empresas` y `cursos`. La fila se vincula por `proceso_id`, con empresa, nombre, descripción, propuesta, presupuesto, fechas e informe. |
 | **3.3 Usuarios y grupos** | Verificá los cinco en IDM. En Task o Postman iniciá sesión como administrativo y como docente con la misma credencial de Flowable para probar los permisos. | El instalador crea ambas membresías; al repetirlo evita duplicados. |
 | **3.4 Listeners** | Consultá `assignee` de **Lista** y probá otra instancia con diferente carga. Buscá `resultado` histórico al cerrar. | Las pruebas Maven validan las asignaciones y los cinco resultados. En la consulta SQL, el estado debe coincidir con el resultado de Flowable. |
-| **3.5 Datos y temporizadores** | Consultá variables durante el proceso con **GET** `{{ui}}/process-api/runtime/process-instances/{{instanciaId}}/variables`. Probá una revisión y comprobá que `recordatorios` vuelve a cero. Para probar silencio rápido, iniciá con `plazoRespuesta` de tipo string con valor `PT5S`. | Las pruebas adelantan el reloj del motor para comprobar dos recordatorios, archivo en el tercero y aparición de **Dictar** a la fecha acordada. |
+| **3.5 Datos y temporizadores** | Consultá variables durante el proceso con **GET** `{{ui}}/process-api/runtime/process-instances/{{instanciaId}}/variables`. Probá una revisión y comprobá que `intentosRecordatorio` vuelve a cero. Para probar silencio rápido, iniciá con `plazoRespuesta` de tipo string con valor `PT5S`. | Las pruebas adelantan el reloj del motor para comprobar dos intentosRecordatorio, archivo en el tercero y aparición de **Dictar** a la fecha acordada. |
 
 Historial en Postman: **GET** `{{ui}}/process-api/history/historic-variable-instances?processInstanceId={{instanciaId}}&variableName=resultado`. En Flowable Admin podés localizar la instancia por su ID y ver su historial. Caminos esperados:
 
 - `FINALIZADO`: confirmá, dictá, elaborá informe, archivá y terminá la liberación de los recursos.
 - `CANCELADO`: durante la preparación enviá **Cancelación**. Si contrataste equipo, reclamá y completá la tarea de liberación. Luego completá **Verificar compensaciones** como `jefeAdmin`. El resultado llega al salir por la rama de cancelación. [Prueba completa](Predefinitiva.md#5-verificar-compensaciones-y-la-salida-por-xor).
 - `RECHAZADO`: enviá **Rechazo** y archivá la solicitud.
-- `SIN_RESPUESTA`: enviá la propuesta, dejá pasar dos recordatorios y archivá cuando venza la tercera espera.
+- `SIN_RESPUESTA`: enviá la propuesta, dejá pasar dos intentosRecordatorio y archivá cuando venza la tercera espera.
 - `NO_VIABLE`: iniciá una solicitud mientras cinco anteriores siguen abiertas.
 
 ### Operaciones del proceso por CMD

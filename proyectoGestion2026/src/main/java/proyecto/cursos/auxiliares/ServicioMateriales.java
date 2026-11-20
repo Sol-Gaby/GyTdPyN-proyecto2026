@@ -46,7 +46,7 @@ public class ServicioMateriales {
         finally { org.flowable.common.engine.impl.identity.Authentication.setAuthenticatedUserId(null); }
     }
     private TaskQuery materiales(){return motor.getTaskService().createTaskQuery().processDefinitionKey("Process_Curso").taskDefinitionKey("Material").active();}
-    private TaskQuery disponibles(){return materiales().taskUnassigned().taskCandidateGroup("administracion");}
-    private boolean esAdmin(String usuario){return motor.getIdentityService().createUserQuery().userId(usuario).memberOfGroup("administracion").count()==1;}
+    private TaskQuery disponibles(){return materiales().taskUnassigned().taskCandidateGroup("gestion_academica");}
+    private boolean esAdmin(String usuario){return motor.getIdentityService().createUserQuery().userId(usuario).memberOfGroup("gestion_academica").count()==1;}
     private void exigirAdmin(String usuario){if(!esAdmin(usuario))throw new IllegalArgumentException("Usuario ajeno a Administración");}
 }
