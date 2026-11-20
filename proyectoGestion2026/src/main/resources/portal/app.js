@@ -34,12 +34,14 @@ registro.addEventListener('submit', async e => {
     boton.disabled = true;
     const aviso = document.querySelector('#registro-estado');
     try {
+        const datos = Object.fromEntries(new FormData(registro));
         const resultado = await api('solicitudes', 'POST', {
-            ...Object.fromEntries(new FormData(registro)), solicitudId: referencia
+            ...datos,
+            solicitudId: referencia
         }, null);
-        aviso.textContent = 'Solicitud registrada. Instancia ' + resultado.processInstanceId
-            + '. Referencia ' + resultado.referenciaSolicitud
-            + '. Usuario para el seguimiento después de aceptar: ' + resultado.usuarioEmpresa;
+
+        aviso.textContent = 'Solicitud registrada para la empresa '
+            + datos.empresaCodigo.trim() + ' · ' + datos.empresaNombre.trim();
         referencia = crypto.randomUUID();
         registro.reset();
     } catch (error) {
@@ -92,9 +94,13 @@ async function cargar() {
                 bloque.append(lista);
             }
         } else {
-            bloque.append(nodo('p', 'Instancia ' + fila.processInstanceId));
-            if (!fila.assignee) bloque.append(boton('Reclamar', () => actuar(fila.id, 'reclamar', {})));
-            else bloque.append(boton('Abrir tarea', () => abrir(fila, bloque)));
+            const empresaSolicitud = [fila.empresaCodigo, fila.empresaNombre]
+                .filter(Boolean)
+                .join(' · ');
+
+            bloque.append(nodo('p', empresaSolicitud
+                ? 'Empresa ' + empresaSolicitud
+                : 'Instancia ' + fila.processInstanceId));
         }
         contenido.append(bloque);
     }

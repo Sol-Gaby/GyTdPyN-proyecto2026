@@ -92,12 +92,12 @@ public class PortalCursos {
                 if (instancia == null) throw ex;
             }
         }
-        confirmarRegistroInstitucional(instancia);
+        confirmarRegistro(instancia);
         return Map.of("processInstanceId", instancia, "referenciaSolicitud", referencia,
                 "usuarioEmpresa", "empresa-" + datos.get("empresaCodigo"));
     }
 
-    private void confirmarRegistroInstitucional(String instancia) {
+    private void confirmarRegistro(String instancia) {
         String error = "La sincronización de la solicitud está pendiente. Reintentá sin cambiar los datos.";
         try {
             if (institucion.tieneSolicitud(instancia)) return;
@@ -138,7 +138,26 @@ public class PortalCursos {
                     .forEach(filas::add);
         }
         for (var fila : filas) {
-            if (PermisosRest.CAMPOS.containsKey(fila.path("taskDefinitionKey").asText())) {
+            String tipo = fila.path("taskDefinitionKey").asText();
+            if (!PermisosRest.CAMPOS.containsKey(tipo)) {
+                continue;
+            }
+
+            if ("Propuesta".equals(tipo) && usuario.getName().equals(fila.path("assignee").asText())) {
+                com.fasterxml.jackson.databind.node.ObjectNode tarjeta = fila.deepCopy();
+                String instancia = MotorRest.codificar(fila.path("processInstanceId").asText());
+                JsonNode variables = motor.llamar(
+                        "GET", "/runtime/process-instances/" + instancia + "/variables", null);
+
+                for (JsonNode variable : variables) {
+                    String nombre = variable.path("name").asText();
+                    if ("empresaCodigo".equals(nombre) || "empresaNombre".equals(nombre)) {
+                        tarjeta.put(nombre, variable.path("value").asText(""));
+                    }
+                }
+
+                disponibles.put(tarjeta.path("id").asText(), tarjeta);
+            } else {
                 disponibles.put(fila.path("id").asText(), fila);
             }
         }
