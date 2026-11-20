@@ -14,6 +14,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.flowable.engine.IdentityService;
+import org.flowable.engine.ProcessEngine;
+import org.flowable.engine.impl.util.EngineServiceUtil;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
@@ -30,14 +32,16 @@ public class PortalCursos {
     private final Institucion institucion;
     private final MotorRest motor;
     private final ProyeccionInstitucional proyeccion;
+    private final ProcessEngine motorLocal;
     private final SeguridadCursos seguridad;
     private final ObjectMapper json = new ObjectMapper();
 
     public PortalCursos(Institucion institucion, MotorRest motor, IdentityService identidad,
-            ProyeccionInstitucional proyeccion) {
+            ProyeccionInstitucional proyeccion, ProcessEngine motorLocal) {
         this.institucion = institucion;
         this.motor = motor;
         this.proyeccion = proyeccion;
+        this.motorLocal = motorLocal;
         this.seguridad = new SeguridadCursos(identidad, institucion);
     }
 
@@ -218,9 +222,42 @@ public class PortalCursos {
             motor.tareaComo(usuario.getName(), clave, "PUT", "tasks/" + tareaId + "/action/complete", Map.of());
         } else {
             String ruta = "task-forms/" + tareaId;
-            String form = motor.tareaComo(usuario.getName(), clave, "GET", ruta, null).path("id").asText();
-            motor.tareaComo(usuario.getName(), clave, "POST", ruta, Map.of("formId", form, "values", valores));
+            String formulario = formularioParaCompletar(usuario.getName(), clave, ruta, codigo);
+            try {
+                motor.tareaComo(usuario.getName(), clave, "POST", ruta,
+                        Map.of("formId", formulario, "values", valores));
+            } catch (MotorRest.ErrorMotor error) {
+                if (error.estado() < 500) throw error;
+                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                        "Flowable encontró un error al completar la tarea " + id
+                                + ". Consultá los registros del contenedor flowable.", error);
+            }
         }
+    }
+
+    private String formularioParaCompletar(String usuario, String clave, String ruta, String codigo) {
+        boolean propuesta = "Propuesta".equals(codigo) || "Revisar".equals(codigo);
+        try {
+            String formulario = motor.tareaComo(usuario, clave, "GET", ruta, null).path("id").asText();
+            if (!formulario.isBlank()) return formulario;
+        } catch (MotorRest.ErrorMotor error) {
+            if (!propuesta || (error.estado() != 404 && error.estado() != 500)) throw error;
+        }
+
+        if (propuesta) {
+            // La propuesta del portal tiene sus propios campos. Usá el formulario instalado
+            // cuando la tarea desplegada no resuelve el suyo, conservando el POST REST del responsable.
+            var formularios = EngineServiceUtil.getFormRepositoryService(motorLocal.getProcessEngineConfiguration());
+            var formulario = formularios == null ? null : formularios.createFormDefinitionQuery()
+                    .formDefinitionKey("cursos-propuesta").formWithoutTenantId()
+                    .latestVersion().singleResult();
+            if (formulario != null) return formulario.getId();
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                    "Falta instalar el formulario cursos-propuesta. Ejecutá InstalarCursos.");
+        }
+
+        throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                "Flowable no devolvió el identificador del formulario de la tarea.");
     }
 
     private JsonNode tareaDisponible(String id, Principal usuario) {
