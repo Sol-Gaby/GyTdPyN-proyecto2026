@@ -137,7 +137,7 @@ public class ControladorPortalCursos {
         var disponibles = new LinkedHashMap<String, JsonNode>();
         List<JsonNode> filas = new ArrayList<>(motor.listar(CONSULTA_TAREAS + "assignee=" + id));
         if (seguridad.pertenece(usuario.getName(), TareasCurso.ADMINISTRACION)) {
-            motor.listar(CONSULTA_TAREAS + "candidateGroup=administracion").stream()
+            motor.listar(CONSULTA_TAREAS + "candidateGroup=" + ClienteRestFlowable.codificar(TareasCurso.ADMINISTRACION)).stream()
                     .filter(t -> t.path("assignee").isNull() || t.path("assignee").isMissingNode())
                     .forEach(filas::add);
         }
