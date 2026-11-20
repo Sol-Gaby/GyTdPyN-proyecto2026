@@ -16,13 +16,13 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 
-public final class MotorRest {
+public final class ClienteRestFlowable {
     private final ObjectMapper json = new ObjectMapper();
     private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
     private final String url;
     private final String tecnico;
 
-    public MotorRest(String url, String usuario, String clave) {
+    public ClienteRestFlowable(String url, String usuario, String clave) {
         this.url = url.replaceAll("/+$", "");
         this.tecnico = "Basic " + Base64.getEncoder().encodeToString((usuario + ":" + clave).getBytes(StandardCharsets.UTF_8));
     }

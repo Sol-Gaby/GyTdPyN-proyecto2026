@@ -6,7 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 /** Los formularios del portal solo pueden cambiar campos de la tarea correspondiente. */
-final class PermisosRest {
+final class CamposPermitidosTarea {
     static final Map<String, Set<String>> CAMPOS = Map.of(
             "Propuesta", Set.of("programa", "presupuesto", "fechasPosibles"),
             "Revisar", Set.of("programa", "presupuesto", "fechasPosibles"),
@@ -15,7 +15,7 @@ final class PermisosRest {
             "EnviarInforme", Set.of(), "Activity_1018bdz", Set.of("docenteAsignado"),
             "Dictar", Set.of(), "Informe", Set.of("informeResultados"));
 
-    private PermisosRest() { }
+    private CamposPermitidosTarea() { }
 
     static void validar(String tarea, Map<String, Object> valores) {
         Set<String> permitidos = CAMPOS.get(tarea);

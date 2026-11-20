@@ -4,7 +4,7 @@ import java.util.TimeZone;
 import org.flowable.engine.ProcessEngine;
 import org.flowable.engine.ProcessEngineConfiguration;
 
-public final class ConexionMotor {
+public final class ConexionFlowable {
     public static ProcessEngine abrir() {
         TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
         var cfg = ProcessEngineConfiguration.createStandaloneProcessEngineConfiguration()

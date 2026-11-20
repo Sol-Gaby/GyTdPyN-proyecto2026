@@ -8,11 +8,11 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
-final class SeguridadCursos implements AuthenticationProvider {
+final class AutenticacionPortalCursos implements AuthenticationProvider {
     private final IdentityService identidad;
-    private final Institucion institucion;
+    private final RepositorioInstitucional institucion;
 
-    SeguridadCursos(IdentityService identidad, Institucion institucion) {
+    AutenticacionPortalCursos(IdentityService identidad, RepositorioInstitucional institucion) {
         this.identidad = identidad;
         this.institucion = institucion;
     }

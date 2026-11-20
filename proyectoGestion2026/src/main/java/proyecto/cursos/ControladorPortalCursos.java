@@ -27,22 +27,22 @@ import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/cursos")
-public class PortalCursos {
+public class ControladorPortalCursos {
     private static final String CONSULTA_TAREAS = "/runtime/tasks?processDefinitionKey=Process_Curso&";
-    private final Institucion institucion;
-    private final MotorRest motor;
+    private final RepositorioInstitucional institucion;
+    private final ClienteRestFlowable motor;
     private final ProyeccionInstitucional proyeccion;
     private final ProcessEngine motorLocal;
-    private final SeguridadCursos seguridad;
+    private final AutenticacionPortalCursos seguridad;
     private final ObjectMapper json = new ObjectMapper();
 
-    public PortalCursos(Institucion institucion, MotorRest motor, IdentityService identidad,
+    public ControladorPortalCursos(RepositorioInstitucional institucion, ClienteRestFlowable motor, IdentityService identidad,
             ProyeccionInstitucional proyeccion, ProcessEngine motorLocal) {
         this.institucion = institucion;
         this.motor = motor;
         this.proyeccion = proyeccion;
         this.motorLocal = motorLocal;
-        this.seguridad = new SeguridadCursos(identidad, institucion);
+        this.seguridad = new AutenticacionPortalCursos(identidad, institucion);
     }
 
     @GetMapping(value = "/", produces = "text/html;charset=UTF-8")
@@ -91,7 +91,7 @@ public class PortalCursos {
             try {
                 instancia = motor.llamar("POST", "/runtime/process-instances", Map.of(
                         "message", "Solicitud de curso", "businessKey", referencia, "variables", variables)).path("id").asText();
-            } catch (MotorRest.ErrorMotor | IllegalStateException ex) {
+            } catch (ClienteRestFlowable.ErrorMotor | IllegalStateException ex) {
                 instancia = recuperar(referencia, solicitud);
                 if (instancia == null) throw ex;
             }
@@ -115,7 +115,7 @@ public class PortalCursos {
 
     private String recuperar(String referencia, String solicitud) {
         var previas = motor.listar("/history/historic-process-instances?processDefinitionKey=Process_Curso"
-                + "&includeProcessVariables=true&businessKey=" + MotorRest.codificar(referencia));
+                + "&includeProcessVariables=true&businessKey=" + ClienteRestFlowable.codificar(referencia));
         if (previas.isEmpty()) return null;
         JsonNode proceso = previas.get(0);
         for (JsonNode var : proceso.path("variables")) {
@@ -133,7 +133,7 @@ public class PortalCursos {
 
     @GetMapping("/api/tareas")
     public List<JsonNode> tareas(Principal usuario) {
-        String id = MotorRest.codificar(usuario.getName());
+        String id = ClienteRestFlowable.codificar(usuario.getName());
         var disponibles = new LinkedHashMap<String, JsonNode>();
         List<JsonNode> filas = new ArrayList<>(motor.listar(CONSULTA_TAREAS + "assignee=" + id));
         if (seguridad.pertenece(usuario.getName(), TareasCurso.ADMINISTRACION)) {
@@ -142,7 +142,7 @@ public class PortalCursos {
                     .forEach(filas::add);
         }
         for (var fila : filas) {
-            if (PermisosRest.CAMPOS.containsKey(fila.path("taskDefinitionKey").asText())) {
+            if (CamposPermitidosTarea.CAMPOS.containsKey(fila.path("taskDefinitionKey").asText())) {
                 disponibles.put(fila.path("id").asText(), fila);
             }
         }
@@ -171,7 +171,7 @@ public class PortalCursos {
                 return campos;
         }
         String instancia = tarea.path("processInstanceId").asText();
-        JsonNode variables = motor.llamar("GET", "/runtime/process-instances/" + MotorRest.codificar(instancia)
+        JsonNode variables = motor.llamar("GET", "/runtime/process-instances/" + ClienteRestFlowable.codificar(instancia)
                 + "/variables", null);
         for (var variable : variables) {
             String nombre = variable.path("name").asText();
@@ -188,7 +188,7 @@ public class PortalCursos {
             @RequestBody Map<String, Object> valores, Principal usuario, @RequestHeader("Authorization") String auth) {
         var tarea = tareaDisponible(id, usuario);
         String responsable = tarea.path("assignee").asText("");
-        String tareaId = MotorRest.codificar(id);
+        String tareaId = ClienteRestFlowable.codificar(id);
         String clave = claveSesion(auth);
         String codigo = tarea.path("taskDefinitionKey").asText();
         if ("reclamar".equals(accion)) {
@@ -198,8 +198,8 @@ public class PortalCursos {
         }
         if (!"completar".equals(accion)) throw new IllegalArgumentException("Acción desconocida");
         if (!usuario.getName().equals(responsable)) throw prohibido();
-        PermisosRest.validar(codigo, valores);
-        if (PermisosRest.CAMPOS.get(codigo).isEmpty()) {
+        CamposPermitidosTarea.validar(codigo, valores);
+        if (CamposPermitidosTarea.CAMPOS.get(codigo).isEmpty()) {
             motor.tareaComo(usuario.getName(), clave, "PUT", "tasks/" + tareaId + "/action/complete", Map.of());
         } else {
             String ruta = "task-forms/" + tareaId;
@@ -207,7 +207,7 @@ public class PortalCursos {
             try {
                 motor.tareaComo(usuario.getName(), clave, "POST", ruta,
                         Map.of("formId", formulario, "values", valores));
-            } catch (MotorRest.ErrorMotor error) {
+            } catch (ClienteRestFlowable.ErrorMotor error) {
                 if (error.estado() < 500) throw error;
                 throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
                         "Flowable encontró un error al completar la tarea " + id
@@ -221,7 +221,7 @@ public class PortalCursos {
         try {
             String formulario = motor.tareaComo(usuario, clave, "GET", ruta, null).path("id").asText();
             if (!formulario.isBlank()) return formulario;
-        } catch (MotorRest.ErrorMotor error) {
+        } catch (ClienteRestFlowable.ErrorMotor error) {
             if (!propuesta || (error.estado() != 404 && error.estado() != 500)) throw error;
         }
 
@@ -243,7 +243,7 @@ public class PortalCursos {
 
     private JsonNode tareaDisponible(String id, Principal usuario) {
         return tareas(usuario).stream().filter(t -> id.equals(t.path("id").asText())).findFirst()
-                .orElseThrow(PortalCursos::prohibido);
+                .orElseThrow(ControladorPortalCursos::prohibido);
     }
 
     @GetMapping("/api/empresa/cursos")
@@ -251,7 +251,7 @@ public class PortalCursos {
         var cursos = institucion.cursos(codigoEmpresa(usuario));
         for (var curso : cursos) {
             if (!"EN_TRAMITE".equals(curso.get("estado"))) continue;
-            String id = MotorRest.codificar((String) curso.get("id"));
+            String id = ClienteRestFlowable.codificar((String) curso.get("id"));
             var tareas = motor.listar("/runtime/tasks?processInstanceId=" + id);
             var ejecuciones = motor.listar("/runtime/executions?processInstanceId=" + id);
             var actividades = new LinkedHashSet<String>();
@@ -299,7 +299,7 @@ public class PortalCursos {
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, String>> invalido(IllegalArgumentException error) {
-        int estado = error instanceof MotorRest.ErrorMotor ? ((MotorRest.ErrorMotor) error).estado() : 400;
+        int estado = error instanceof ClienteRestFlowable.ErrorMotor ? ((ClienteRestFlowable.ErrorMotor) error).estado() : 400;
         return ResponseEntity.status(estado >= 500 ? 502 : estado).body(Map.of("error", error.getMessage()));
     }
 

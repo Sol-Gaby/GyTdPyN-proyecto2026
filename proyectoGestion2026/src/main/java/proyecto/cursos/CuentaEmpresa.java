@@ -8,7 +8,7 @@ public final class CuentaEmpresa {
         char[] clave = System.console().readPassword("Clave nueva para empresa-%s: ", args[0]);
         if (clave == null) throw new IllegalStateException("No se ingresó una clave");
         try {
-            new Institucion(System.getenv("CURSOS_INSTITUCION_JDBC_URL"),
+            new RepositorioInstitucional(System.getenv("CURSOS_INSTITUCION_JDBC_URL"),
                     System.getenv("SPRING_DATASOURCE_USERNAME"), System.getenv("SPRING_DATASOURCE_PASSWORD"))
                     .establecerClave(args[0], new String(clave));
             System.out.println("Credenciales disponibles para empresa-" + args[0]);

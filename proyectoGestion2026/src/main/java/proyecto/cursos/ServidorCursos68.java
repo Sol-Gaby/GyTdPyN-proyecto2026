@@ -15,28 +15,28 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnProperty(name = "cursos.institucion.jdbc-url")
-@Import({PortalCursos.class, ServidorCursos68.SeguridadPortal.class})
+@Import({ControladorPortalCursos.class, ServidorCursos68.SeguridadPortal.class})
 public class ServidorCursos68 {
     @Bean
-    Institucion institucion(@Value("${cursos.institucion.jdbc-url}") String jdbc,
+    RepositorioInstitucional institucion(@Value("${cursos.institucion.jdbc-url}") String jdbc,
             @Value("${spring.datasource.username}") String usuario, @Value("${spring.datasource.password}") String clave) {
-        return new Institucion(jdbc, usuario, clave);
+        return new RepositorioInstitucional(jdbc, usuario, clave);
     }
 
     @Bean
-    MotorRest motorRest(@Value("${cursos.rest.url:http://127.0.0.1:8080/flowable-ui}") String url,
+    ClienteRestFlowable motorRest(@Value("${cursos.rest.url:http://127.0.0.1:8080/flowable-ui}") String url,
             @Value("${cursos.rest.usuario:admin}") String usuario, @Value("${cursos.rest.clave:test}") String clave) {
-        return new MotorRest(url, usuario, clave);
+        return new ClienteRestFlowable(url, usuario, clave);
     }
 
     @Configuration(proxyBeanMethods = false)
     @Order(-10)
     @SuppressWarnings("deprecation")
     static class SeguridadPortal extends WebSecurityConfigurerAdapter {
-        private final SeguridadCursos seguridad;
+        private final AutenticacionPortalCursos seguridad;
 
-        SeguridadPortal(IdentityService identidad, Institucion institucion) {
-            this.seguridad = new SeguridadCursos(identidad, institucion);
+        SeguridadPortal(IdentityService identidad, RepositorioInstitucional institucion) {
+            this.seguridad = new AutenticacionPortalCursos(identidad, institucion);
         }
 
         @Override
