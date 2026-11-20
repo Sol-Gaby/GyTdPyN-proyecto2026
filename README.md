@@ -61,3 +61,17 @@ El instalador publica el proceso "Process_Curso", la tabla de decisión y los fo
 Entramos al [portal de cursos](http://localhost:8082/flowable-ui/cursos/) y completamos "Solicitar una capacitación". Después ingresamos como `jefeAdmin` con la contraseña de personal que configuramos al crear la cuenta. Para una solicitud viable, debe aparecer _Registrar y elaborar propuesta_. Abrimos la tarea, cargamos el programa, el presupuesto y las fechas posibles, y pulsamos _Completar propuesta_.
 
 Si queremos comprobar la definición desplegada, entramos a **Flowable UI → Admin → Process Definitions** y buscamos _Organizar curso de capacitación_. En una instalación nueva, la cuenta de demostración de Flowable UI es "admin" con contraseña "test".
+
+### 5. Usuarios para uso del Portal
+
+| Lugar | Usuario | Clave |
+| --- | --- | --- |
+| Portal de Cursos|jefeAdmin | 123 |
+| Portal de Cursos|adminCursos | 123 |
+| Portal de Cursos|jefeDocente | 123 |
+| Portal de Cursos|docente1 | 123 |
+| Portal de Cursos|docente2 | 123 |
+|Portal  de Cursos/ seguimiento| empresa-EMP-PRUEBA (si código de la solicitud = EMP-PRUEBA) | Elegír en CMD con CuentaEmpresa |
+|Postman| Usuario de personal o empresa a probar | 123 |
+|Postman: /process-api/.|admin | 123 |
+|AppMateriales|adminCursos o jefeAdmin | 123 |
