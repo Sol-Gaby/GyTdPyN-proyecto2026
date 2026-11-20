@@ -97,7 +97,6 @@ async function cargar() {
             const empresaSolicitud = [fila.empresaCodigo, fila.empresaNombre]
                 .filter(Boolean)
                 .join(' · ');
-
             bloque.append(nodo('p', empresaSolicitud
                 ? 'Empresa ' + empresaSolicitud
                 : 'Instancia ' + fila.processInstanceId));
@@ -171,7 +170,7 @@ async function abrir(tarea, bloque) {
         label.append(input);
         form.append(label);
     }
-    const enviar = nodo('button', 'Completar');
+    const enviar = nodo('boton_enviar', 'Completar');
     form.append(enviar);
     form.onsubmit = async e => {
         e.preventDefault();
