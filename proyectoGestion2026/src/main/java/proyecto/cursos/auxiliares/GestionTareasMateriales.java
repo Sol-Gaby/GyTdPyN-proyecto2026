@@ -8,14 +8,14 @@ import org.flowable.engine.ProcessEngine;
 import org.flowable.task.api.Task;
 import org.flowable.task.api.TaskQuery;
 
-public class ServicioMateriales {
+public class GestionTareasMateriales {
     static final class Fila {
         private final String id, instancia, nombre; private final boolean asignada;
         Fila(Task t, String usuario) { id=t.getId(); instancia=t.getProcessInstanceId(); nombre=t.getName(); asignada=usuario.equals(t.getAssignee()); }
         String id(){return id;} String instancia(){return instancia;} String nombre(){return nombre;} boolean asignada(){return asignada;}
     }
     private final ProcessEngine motor;
-    public ServicioMateriales(ProcessEngine motor) { this.motor = motor; }
+    public GestionTareasMateriales(ProcessEngine motor) { this.motor = motor; }
     public void identificar(String usuario, String clave) {
         if (!motor.getIdentityService().checkPassword(usuario, clave) || !esAdmin(usuario)) throw new IllegalArgumentException("Credenciales inválidas o usuario ajeno a Administración");
     }

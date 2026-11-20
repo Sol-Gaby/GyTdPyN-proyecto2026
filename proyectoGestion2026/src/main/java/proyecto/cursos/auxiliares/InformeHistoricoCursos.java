@@ -13,7 +13,7 @@ import org.flowable.engine.ProcessEngine;
 import org.flowable.engine.history.HistoricActivityInstance;
 
 /** Consultas 4.3 sobre todas las versiones de Process_Curso. */
-public final class AnalisisHistorico {
+public final class InformeHistoricoCursos {
     private static final String CLAVE = "Process_Curso";
 
     private static final class Informe {
@@ -100,7 +100,7 @@ public final class AnalisisHistorico {
     }
 
     public static void main(String[] args) {
-        ProcessEngine motor = ConexionMotor.abrir();
+        ProcessEngine motor = ConexionFlowable.abrir();
         try {
             consultar(motor).imprimir();
         } finally {

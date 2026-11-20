@@ -19,8 +19,8 @@ Las rutas parten de `GyTdPyN-proyecto2026`.
 | `proyectoGestion2026/src/main/java/proyecto/cursos/ConfiguracionInstitucional.java` | El portal y el sincronizador automático comparten el mismo componente de proyección. |
 | `proyectoGestion2026/src/main/java/proyecto/cursos/EstadoCurso.java` | Encola la referencia web y los datos junto con el ID de la instancia. |
 | `proyectoGestion2026/src/main/java/proyecto/cursos/ProyeccionInstitucional.java` | Puede procesar la cola de una solicitud concreta y persistir su referencia. El proceso periódico sigue atendiendo todos los eventos. |
-| `proyectoGestion2026/src/main/java/proyecto/cursos/Institucion.java` | Verifica la existencia institucional de la solicitud. |
-| `proyectoGestion2026/src/main/java/proyecto/cursos/PortalCursos.java` | Confirma la persistencia en el punto 4.1.1 y entrega al cliente la referencia y el ID. |
+| `proyectoGestion2026/src/main/java/proyecto/cursos/RepositorioInstitucional.java` | Verifica la existencia institucional de la solicitud. |
+| `proyectoGestion2026/src/main/java/proyecto/cursos/ControladorPortalCursos.java` | Confirma la persistencia en el punto 4.1.1 y entrega al cliente la referencia y el ID. |
 | `proyectoGestion2026/src/main/resources/portal/app.js` | Muestra ambos identificadores y presenta errores de autenticación en la página. |
 | `proyectoGestion2026/src/main/resources/processes/organizacion-cursos.bpmn20.xml` | Documenta en el propio modelo ejecutable las responsabilidades de los dos listeners. |
 | `proyectoGestion2026/src/main/java/proyecto/cursos/auxiliares/AppComunicaciones.java` | Ventana Swing para elegir una solicitud y enviar únicamente mensajes habilitados. |
@@ -137,7 +137,7 @@ Debe aparecer **Process_Curso disponible**. El instalador publica el BPMN ejecut
    set "CURSOS_JDBC=jdbc:postgresql://localhost:5433/flowable"
    set "CURSOS_BD_USUARIO=flowable"
    set "CURSOS_BD_CLAVE=TU_POSTGRES_PASSWORD"
-   mvn compile exec:java -Dexec.mainClass=proyecto.cursos.auxiliares.AppMateriales
+   mvn compile exec:java -Dexec.mainClass=proyecto.cursos.auxiliares.VentanaMaterialesCurso
    ```
 
    Entrá como `adminCursos`, reclamá **Preparar materiales** y completala. Comprobá que la misma tarea desaparece de pendientes en **Flowable UI → Task**. Si falla la conexión, revisá el puerto publicado, el nombre de la base y la clave de PostgreSQL. La ventana pide la contraseña del administrativo en Flowable.
@@ -195,7 +195,7 @@ En el **CMD de Maven** con las variables de la app de materiales, ejecutá:
 
 ```bat
 mvn test
-mvn compile exec:java -Dexec.mainClass=proyecto.cursos.auxiliares.AnalisisHistorico
+mvn compile exec:java -Dexec.mainClass=proyecto.cursos.auxiliares.InformeHistoricoCursos
 ```
 
 El primero comprueba casos del motor, incluido el vínculo de la solicitud. El segundo muestra resultados/porcentajes, duraciones promedio de la preparación y tareas completadas por persona.

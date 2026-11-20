@@ -10,13 +10,13 @@ import java.util.Map;
 
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
-public final class Institucion {
+public final class RepositorioInstitucional {
     private final String jdbc;
     private final String usuario;
     private final String clave;
     private final BCryptPasswordEncoder cifrado = new BCryptPasswordEncoder();
 
-    Institucion(String jdbc, String usuario, String clave) {
+    RepositorioInstitucional(String jdbc, String usuario, String clave) {
         this.jdbc = jdbc;
         this.usuario = usuario;
         this.clave = clave;

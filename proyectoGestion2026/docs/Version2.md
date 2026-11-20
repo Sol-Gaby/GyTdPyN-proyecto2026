@@ -1,6 +1,6 @@
 # Version2 — Revisión de los adjuntos e integración con Flowable
 
-La revisión integrada continúa en [Predefinitiva.md](Predefinitiva.md), con el arranque, las credenciales, las pruebas y el informe de cumplimiento.
+El [informe de refactorización](Refactorizacion-ramaSol.md) registra los nombres actuales en `ramaSol`. La revisión integrada continúa en [Predefinitiva.md](Predefinitiva.md), con el arranque, las credenciales, las pruebas y el informe de cumplimiento.
 
 Esta rama parte de `version1` en `caa9880`. El archivo actualizado `docs/diagrama_cursos.bpmn` usa identificadores generados por Camunda Modeler y extensiones Zeebe (Camunda Cloud). Representa el flujo de negocio y queda como referencia. El modelo ejecutable para la instalación es `src/main/resources/processes/organizacion-cursos.bpmn20.xml`. Conserva la clave `Process_Curso`, sus mensajes y sus IDs de actividad para mantener compatibilidad con las definiciones e historial ya desplegados. En Flowable Modeler importá ese XML para ver la implementación. La [guía anterior](Puntos-2-y-3.md#ver-el-diagrama-en-flowable-modeler) muestra los botones.
 
@@ -18,24 +18,24 @@ Esta rama parte de `version1` en `caa9880`. El archivo actualizado `docs/diagram
 | `HabilitarEmpresaDelegate.java` | Activa una cuenta de empresa tras la aceptación. **4.1.2**. | `OperacionesCurso` fija `accesoEmpresaHabilitado` y la proyección activa la cuenta por código de empresa sin reemplazar su clave. `CuentaEmpresa` permite simular la entrega inicial de credenciales desde CMD. |
 | `ProbarDelegatesMain.java` | Programa de ensayo para reserva, error y compensación. **1.2–1.4 y defensa**. | Sus casos equivalentes se prueban en `OrganizacionCursosTest`, con los IDs y variables de este BPMN. |
 | `ProbarListenersMain.java` | Ejecuta no viable, rechazo, modificaciones, tiempo agotado, cancelación y recorrido normal. **1, 3.4, 3.5 y defensa**. | Los escenarios se verifican en JUnit con H2 y reloj controlado. Se añade una prueba de referencia única para las solicitudes web. |
-| `ServidorCursos68.java` | Ensambla REST, seguridad, usuarios y despliegue en el proyecto de origen. **3.3 y 4.1**. | Se adaptó como configuración del portal dentro de la UI existente de Flowable 6.8.0. `InstalarCursos` sigue desplegando el BPMN y los recursos. |
-| `MotorRest.java` | Cliente HTTP y paginado de la API de Flowable. **4.1 y 4.2.2**. | Usa el contexto `/flowable-ui`. La cuenta técnica envía mensajes y consulta. Para actuar sobre tareas se usa una sesión de Flowable del usuario real. |
-| `PermisosRest.java` | Valida permisos antes de operar sobre las tareas por REST. **2, 4.1.3 y 4.1.4**. | El portal valida disponibilidad y limita los campos por tipo de tarea. Se mantiene la validación del motor en `TareasCurso`. El personal usa su cuenta y la API de Task; la API técnica sigue reservada para integración. |
-| `SeguridadCursos.java` | Autentica personal y empresas. **3.3 y 4.1.2–4.1.4**. | Usa IDM para personal y BCrypt en PostgreSQL para empresas. La seguridad se aplica a la ruta del portal y conserva la autenticación nativa de Flowable. |
-| `Institucion.java` | Acceso a datos, activación de empresas y PDFs. **3.2, 4.1.1–4.1.3**. | Se adapta a `empresas` y `cursos`. El alta y los documentos se sincronizan mediante la cola transaccional. `DocumentosCurso` genera los PDF y la tabla `documentos_curso` conserva las revisiones. |
-| `PortalCursos.java` | Expone solicitud pública, tareas por rol, seguimiento y documentos. **4.1.1–4.1.4**. | Integrado con un portal HTML adaptable a pantallas pequeñas. Se valida identidad, propiedad de los cursos y datos permitidos antes de operar. |
-| `ConexionMotor.java` | Abre el motor Java auxiliar con la base de Flowable. **4.2.1 y 4.3**. | Usa PostgreSQL del Compose, publicación local 5433 y variables `CURSOS_JDBC`, `CURSOS_BD_USUARIO` y `CURSOS_BD_CLAVE`. La UI sigue ejecutando los temporizadores. |
-| `ServicioMateriales.java` | Identifica administrativos, lista, reclama y completa materiales. **4.2.1**. | Adaptado a `Process_Curso` y `Material`. Envía el usuario autenticado al listener del motor tanto al reclamar como al completar. |
-| `AppMateriales.java` | Interfaz de escritorio Swing. **4.2.1**. | Reutiliza el servicio Java y muestra las tareas que se ven en la misma base de Flowable. |
-| `AnalisisHistorico.java` | Resultados y porcentajes, promedios de las tres ramas y distribución por usuario. **4.3.1–4.3.3**. | Usa `Process_Curso`, `resultado` y los IDs actuales. Excluye actividades interrumpidas y mide inscripciones desde `Nomina` hasta `Lista`. |
+| `ServidorCursos68.java` | Ensambla REST, seguridad, usuarios y despliegue en el proyecto de origen. **3.3 y 4.1**. | En `ramaSol`, `servidor_Institucional.java` configura el portal dentro de la UI de Flowable 6.8.0. `InstalarCursos` sigue desplegando el BPMN y los recursos. |
+| `MotorRest.java` | Cliente HTTP y paginado de la API de Flowable. **4.1 y 4.2.2**. | En `ramaSol`, `ClienteRestFlowable.java`. Usa el contexto `/flowable-ui`. La cuenta técnica envía mensajes y consulta. Para actuar sobre tareas se usa una sesión de Flowable del usuario real. |
+| `PermisosRest.java` | Valida permisos antes de operar sobre las tareas por REST. **2, 4.1.3 y 4.1.4**. | En `ramaSol`, `CamposPermitidosTarea.java`. El portal valida disponibilidad y limita los campos por tipo de tarea. Se mantiene la validación del motor en `TareasCurso`. El personal usa su cuenta y la API de Task; la API técnica sigue reservada para integración. |
+| `SeguridadCursos.java` | Autentica personal y empresas. **3.3 y 4.1.2–4.1.4**. | En `ramaSol`, `AutenticacionPortalCursos.java`. Usa IDM para personal y BCrypt en PostgreSQL para empresas. La seguridad se aplica a la ruta del portal y conserva la autenticación nativa de Flowable. |
+| `Institucion.java` | Acceso a datos, activación de empresas y PDFs. **3.2, 4.1.1–4.1.3**. | En `ramaSol`, `RepositorioInstitucional.java`. Se adapta a `empresas` y `cursos`. El alta y los documentos se sincronizan mediante la cola transaccional. `DocumentosCurso` genera los PDF y la tabla `documentos_curso` conserva las revisiones. |
+| `PortalCursos.java` | Expone solicitud pública, tareas por rol, seguimiento y documentos. **4.1.1–4.1.4**. | En `ramaSol`, `ControladorPortalCursos.java`. Integrado con un portal HTML adaptable a pantallas pequeñas. Se valida identidad, propiedad de los cursos y datos permitidos antes de operar. |
+| `ConexionMotor.java` | Abre el motor Java auxiliar con la base de Flowable. **4.2.1 y 4.3**. | En `ramaSol`, `ConexionFlowable.java`. Usa PostgreSQL del Compose, publicación local 5433 y variables `CURSOS_JDBC`, `CURSOS_BD_USUARIO` y `CURSOS_BD_CLAVE`. La UI sigue ejecutando los temporizadores. |
+| `ServicioMateriales.java` | Identifica administrativos, lista, reclama y completa materiales. **4.2.1**. | En `ramaSol`, `GestionTareasMateriales.java`. Adaptado a `Process_Curso` y `Material`. Envía el usuario autenticado al listener del motor tanto al reclamar como al completar. |
+| `AppMateriales.java` | Interfaz de escritorio Swing. **4.2.1**. | En `ramaSol`, `VentanaMaterialesCurso.java`. Reutiliza el servicio Java y muestra las tareas que se ven en la misma base de Flowable. |
+| `AnalisisHistorico.java` | Resultados y porcentajes, promedios de las tres ramas y distribución por usuario. **4.3.1–4.3.3**. | En `ramaSol`, `InformeHistoricoCursos.java`. Usa `Process_Curso`, `resultado` y los IDs actuales. Excluye actividades interrumpidas y mide inscripciones desde `Nomina` hasta `Lista`. |
 
-`SimularComunicaciones` agrega la opción **4.2.2** por consola, prevista por el enunciado para grupos de hasta tres personas. Reutiliza `MotorRest` y lista solo las suscripciones externas que están activas para la solicitud elegida. La minería del punto **4.4** tiene una salida distinta de las consultas del 4.3 y queda fuera de esta integración de adjuntos.
+`SimularComunicaciones` agrega la opción **4.2.2** por consola, prevista por el enunciado para grupos de hasta tres personas. Reutiliza `ClienteRestFlowable` y lista solo las suscripciones externas que están activas para la solicitud elegida. La minería del punto **4.4** tiene una salida distinta de las consultas del 4.3 y queda fuera de esta integración de adjuntos.
 
 ## Qué cambia en archivos y datos
 
 - **Compose, Dockerfile y `pom.xml`** incorporan la migración `sql/03-portal.sql`, PDFBox y las dependencias de la UI de Flowable. El nombre del volumen de `version1` se conserva. La migración se puede repetir.
 - **BPMN, `EstadoCurso`, `OperacionesCurso`, `ProyeccionInstitucional` y `DocumentosCurso`** agregan registro único de solicitud web, seguimiento, activación de acceso y documentos. La cola se actualiza junto con la transacción del motor. Si el destino falla, la revisión queda en la cola para reintentar. Los PDF se generan al enviar cada versión de la propuesta y al completar el informe.
-- **`ServidorCursos68`, `SeguridadCursos`, `PermisosRest`, `MotorRest`, `PortalCursos`, `Institucion`, `CuentaEmpresa` y `resources/portal/`** agregan la pantalla pública, el panel por rol y la API del portal. La sesión técnica se usa en el servidor. El navegador usa la credencial de la persona autenticada.
+- **`servidor_Institucional`, `AutenticacionPortalCursos`, `CamposPermitidosTarea`, `ClienteRestFlowable`, `ControladorPortalCursos`, `RepositorioInstitucional`, `CuentaEmpresa` y `resources/portal/`** agregan la pantalla pública, el panel por rol y la API del portal. La sesión técnica se usa en el servidor. El navegador usa la credencial de la persona autenticada.
 - **`auxiliares/`** incorpora la app Swing de materiales, el simulador por consola y el informe histórico. **`OrganizacionCursosTest`** verifica el flujo, la autorización y la referencia única de solicitud.
 
 ## Arranque en Windows
@@ -74,7 +74,7 @@ El primer comando debe mostrar `Process_Curso disponible`. El segundo debe devol
 | Portal → **Solicitar una capacitación**, y Postman → `POST /cursos/api/solicitudes` | Sin usuario | Sin contraseña. En Postman elegí **No Auth**. |
 | Postman → `/process-api/...`, servidor del portal y simulador de comunicaciones | `CURSOS_REST_USUARIO`, por defecto `admin` | `CURSOS_REST_CLAVE`, por defecto `test`. Son las credenciales de una cuenta técnica existente de Flowable. |
 | PostgreSQL y conexión de los auxiliares Java | `POSTGRES_USER`, por defecto `flowable` | `POSTGRES_PASSWORD` de `flowable-cursos/.env`. Al ejecutar los auxiliares desde Windows, pasá estos valores como `CURSOS_BD_USUARIO` y `CURSOS_BD_CLAVE`. |
-| Ventana Swing de **AppMateriales** | `adminCursos` o `jefeAdmin` | La clave actual del usuario en Flowable. La conexión a PostgreSQL se configura aparte. |
+| Ventana Swing de **VentanaMaterialesCurso** | `adminCursos` o `jefeAdmin` | La clave actual del usuario en Flowable. La conexión a PostgreSQL se configura aparte. |
 
 Para la primera propuesta, ingresá al portal como `jefeAdmin`. `adminCursos` puede reclamar tareas compartidas de Administración. `jefeDocente` define quién dicta y elabora el informe. `docente1` y `docente2` ven **Desarrollar curso** cuando les corresponde por asignación y fecha.
 
@@ -140,11 +140,11 @@ mvn test
 set "CURSOS_BD_USUARIO=flowable"
 set "CURSOS_BD_CLAVE=TU_POSTGRES_PASSWORD"
 set "CURSOS_JDBC=jdbc:postgresql://localhost:5433/flowable"
-mvn compile exec:java -Dexec.mainClass=proyecto.cursos.auxiliares.AppMateriales
+mvn compile exec:java -Dexec.mainClass=proyecto.cursos.auxiliares.VentanaMaterialesCurso
 ```
 
 - **mvn test** verifica el motor en memoria. Buscá **11 pruebas, 0 fallos**.
-- **AppMateriales** abre la ventana Swing. Entrá como `adminCursos`, pulsá **Actualizar**, seleccioná **Preparar materiales**, pulsá **Reclamar** y **Completar**. La tarea pasa de disponible a asignada y sale de pendientes tanto en la app como en **Flowable Task**. Si la conexión falla, revisá `docker compose ps`, las credenciales y que la base del motor sea la indicada en la URL.
+- **VentanaMaterialesCurso** abre la ventana Swing. Entrá como `adminCursos`, pulsá **Actualizar**, seleccioná **Preparar materiales**, pulsá **Reclamar** y **Completar**. La tarea pasa de disponible a asignada y sale de pendientes tanto en la app como en **Flowable Task**. Si la conexión falla, revisá `docker compose ps`, las credenciales y que la base del motor sea la indicada en la URL.
 
 En la misma carpeta, para el simulador:
 
@@ -157,7 +157,7 @@ mvn compile exec:java -Dexec.mainClass=proyecto.cursos.auxiliares.SimularComunic
 Elegí el número de instancia y después el número de mensaje. La consola muestra solo los mensajes habilitados. Para aceptar, escribí una fecha con hora y desfase, como `2027-01-15T10:00:00-03:00`. Si devuelve **401**, revisá la cuenta técnica. Si todavía no ofrece mensajes, completá **Propuesta** o verificá que elegiste la instancia correcta.
 
 ```bat
-mvn compile exec:java -Dexec.mainClass=proyecto.cursos.auxiliares.AnalisisHistorico
+mvn compile exec:java -Dexec.mainClass=proyecto.cursos.auxiliares.InformeHistoricoCursos
 ```
 
 Con las mismas variables PostgreSQL, muestra tres tablas. Los porcentajes usan como denominador las instancias terminadas. La preparación se mide sobre casos que alcanzaron `SubFin`; la rama de recursos espera todas las acciones seleccionadas. El conteo de tareas excluye las interrumpidas. Con historial vacío, se esperan ceros y **sin casos** en promedios. Para probar, terminá una solicitud normal, rechazá otra y cancelá una tercera durante la preparación. La cancelada debe aparecer en resultados y quedar fuera del promedio de preparación.
