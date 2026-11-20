@@ -19,8 +19,8 @@ import org.flowable.task.service.delegate.DelegateTask;
 
 public class TareasCurso implements TaskListener {
     private static final long serialVersionUID = 1L;
-    public static final String ADMINISTRACION = "administracion";
-    public static final String DOCENTES = "docentes";
+    public static final String ADMINISTRACION = "gestion_academica";
+    public static final String DOCENTES = "profesores";
     private static final String RESPONSABLE = "cursosResponsable";
     private static final String SIN_RESPONSABLE = "";
     private static final Set<String> TAREAS_ADMINISTRACION = Set.of(
@@ -73,7 +73,7 @@ public class TareasCurso implements TaskListener {
             case "Activity_1018bdz":
                 String docente = exigirTexto(task, "docenteAsignado");
                 if (motor.getIdentityService().createUserQuery().memberOfGroup(DOCENTES).userId(docente).count() != 1) {
-                    throw new FlowableException("El docente seleccionado no pertenece al grupo docentes");
+                    throw new FlowableException("El docente seleccionado no pertenece al grupo profesores");
                 }
                 break;
             case "Informe":
@@ -157,7 +157,7 @@ public class TareasCurso implements TaskListener {
                 .orderByUserId().asc().list().stream().map(User::getId)
                 .min(Comparator.comparingLong((String usuario) -> motor.getTaskService().createTaskQuery()
                         .taskAssignee(usuario).count()).thenComparing(Comparator.naturalOrder()))
-                .orElseThrow(() -> new FlowableException("El grupo administracion no tiene integrantes"));
+                .orElseThrow(() -> new FlowableException("El grupo gestion_academica no tiene integrantes"));
         motor.getTaskService().setAssignee(task.getId(), responsable);
     }
 

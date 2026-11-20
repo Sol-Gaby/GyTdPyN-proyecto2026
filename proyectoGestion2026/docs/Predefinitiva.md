@@ -85,14 +85,14 @@ Debe aparecer **Process_Curso disponible**. El instalador publica el BPMN ejecut
 ### 2. Probar el formulario y el vínculo del punto 4.1.1
 
 1. Abrí [Portal de capacitación](http://localhost:8082/flowable-ui/cursos/). En **Solicitar una capacitación**, escribí por ejemplo código `EMP-PREDEF`, nombre de empresa, contacto, correo, teléfono, temática `BPMN`, descripción, cantidad y fechas preferidas. Pulsá **Enviar solicitud**. Copiá el ID de instancia y la referencia `web-...`.
-2. En **Flowable Admin**, buscá ese ID entre instancias activas. También podés verificarlo en Postman con **GET** `http://localhost:8082/flowable-ui/process-api/runtime/process-instances/ID_INSTANCIA` y **Basic Auth** de la cuenta técnica. Esperá **200** y la misma `businessKey`. Si la solicitud terminó por no viable, consultá `/process-api/history/historic-process-instances/ID_INSTANCIA`.
+2. En **Flowable Admin**, buscá ese ID entre instancias activas. También podés verificarlo en Postman con **GET** `http://localhost:8082/flowable-ui/process-api/runtime/process-instances/ID_INSTANCIA` y **Basic Auth** de la cuenta técnica. Esperá **200** y la misma `businessKey`. Si la solicitud terminó por no cursoViable, consultá `/process-api/history/historic-process-instances/ID_INSTANCIA`.
 3. En **CMD**, desde `flowable-cursos`, verificá la fila. Reemplazá `ID_INSTANCIA` y, si cambiaste `POSTGRES_USER`, también `flowable`.
 
    ```bat
    docker compose exec -T database psql -U flowable -d institucion_cursos -c "SELECT proceso_id, solicitud_referencia, empresa_codigo, estado, solicitud_web FROM cursos WHERE proceso_id = 'ID_INSTANCIA';"
    ```
 
-   Esperá una fila con el mismo ID, la misma referencia y todos los campos de la solicitud en `solicitud_web`. Al crear un caso viable, el estado inicial es `EN_TRAMITE`. Si recibís **503**, conservá el formulario y reintentá desde esa misma página. Revisá los logs del servicio Flowable si persiste.
+   Esperá una fila con el mismo ID, la misma referencia y todos los campos de la solicitud en `solicitud_web`. Al crear un caso cursoViable, el estado inicial es `EN_TRAMITE`. Si recibís **503**, conservá el formulario y reintentá desde esa misma página. Revisá los logs del servicio Flowable si persiste.
 4. En **Postman**, probá **POST** `http://localhost:8082/flowable-ui/cursos/api/solicitudes`. Elegí **No Auth → Body → raw → JSON**. Usá un UUID fijo nuevo para el primer envío.
 
    ```json
@@ -210,6 +210,6 @@ where dot
 .venv\Scripts\python ..\proyectoGestion2026\mineria\analizar.py negociacion.csv --imagen negociacion.png
 ```
 
-El CSV tiene instancia, orden, actividad y fecha registrada. El gráfico muestra frecuencias de sucesión entre hitos, y la consola muestra cantidad y porcentaje de hasta tres recorridos. Si `where dot` no devuelve una ruta, instalá [Graphviz](https://graphviz.org/download/) y abrí de nuevo CMD con `dot` en el PATH. Si el CSV solo tiene encabezados, concluí una aceptación, un rechazo, un cierre por plazo o un caso no viable y repetí la exportación.
+El CSV tiene instancia, orden, actividad y fecha registrada. El gráfico muestra frecuencias de sucesión entre hitos, y la consola muestra cantidad y porcentaje de hasta tres recorridos. Si `where dot` no devuelve una ruta, instalá [Graphviz](https://graphviz.org/download/) y abrí de nuevo CMD con `dot` en el PATH. Si el CSV solo tiene encabezados, concluí una aceptación, un rechazo, un cierre por plazo o un caso no cursoViable y repetí la exportación.
 
 Para redactar la comparación, contrastá las secuencias observadas con las ramas del BPMN. Indicá cuáles ocurrieron en la muestra, si se observó el ciclo de revisión y el número de recordatorios en las variantes de espera. El CSV selecciona hitos concluidos y excluye negociaciones abiertas y esperas alternativas nunca tomadas. Una ruta sin casos en la demo puede seguir siendo válida en el modelo. Entregá el CSV real, el PNG o su captura, y la conclusión basada en los conteos.

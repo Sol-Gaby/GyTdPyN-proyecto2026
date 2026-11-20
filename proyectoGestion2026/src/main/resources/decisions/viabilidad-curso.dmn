@@ -4,9 +4,9 @@
   <decision id="viabilidadCurso" name="Viabilidad del curso">
     <decisionTable id="tablaViabilidad" hitPolicy="UNIQUE">
       <input id="entradaCantidad" label="Otras instancias sin finalizar">
-        <inputExpression id="expCantidad" typeRef="number"><text>cantidadOtrosCursos</text></inputExpression>
+        <inputExpression id="expCantidad" typeRef="number"><text>totalCursosVigentes</text></inputExpression>
       </input>
-      <output id="salidaViable" name="viable" typeRef="boolean"/>
+      <output id="salidaViable" name="cursoViable" typeRef="boolean"/>
       <rule id="continuar">
         <inputEntry id="menosDeCinco"><text>&lt; 5</text></inputEntry>
         <outputEntry id="esViable"><text>true</text></outputEntry>

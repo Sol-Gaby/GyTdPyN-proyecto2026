@@ -104,7 +104,7 @@ const campos = {
     Propuesta: [['programa','Programa','texto'],['presupuesto','Presupuesto','number'],['fechasPosibles','Fechas posibles','text']],
     Revisar: [['programa','Programa','texto'],['presupuesto','Presupuesto','number'],['fechasPosibles','Fechas posibles','text']],
     Activity_12i2hpf: [['requiereAula','Aula física','checkbox'],['requierePlataforma','Aula virtual','checkbox'],['requiereEquipamiento','Equipamiento especial','checkbox']],
-    Activity_1018bdz: [['docenteAsignado','Docente','docentes']],
+    Activity_1018bdz: [['docenteAsignado','Docente','profesores']],
     Informe: [['informeResultados','Informe de resultados','texto']]
 };
 
@@ -150,9 +150,9 @@ async function abrir(tarea, bloque) {
     const form = nodo('form');
     for (const [id, titulo, tipo] of campos[clave] || []) {
         const label = nodo('label', titulo);
-        const input = nodo(tipo === 'texto' ? 'textarea' : tipo === 'docentes' ? 'select' : 'input');
+        const input = nodo(tipo === 'texto' ? 'textarea' : tipo === 'profesores' ? 'select' : 'input');
         input.name = id;
-        if (tipo === 'docentes') {
+        if (tipo === 'profesores') {
             for (const docente of ['jefeDocente','docente1','docente2']) {
                 const opcion = nodo('option', docente);
                 opcion.value = docente;

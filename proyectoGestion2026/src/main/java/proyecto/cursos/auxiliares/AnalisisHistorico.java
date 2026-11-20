@@ -69,7 +69,7 @@ public final class AnalisisHistorico {
     private static Informe consultar(ProcessEngine motor) {
         var informe = new Informe();
         var historial = motor.getHistoryService();
-        for (String grupo : List.of("administracion", "docentes")) {
+        for (String grupo : List.of("gestion_academica", "profesores")) {
             motor.getIdentityService().createUserQuery().memberOfGroup(grupo).list()
                     .forEach(usuario -> informe.tareas.put(usuario.getId(), 0L));
         }
