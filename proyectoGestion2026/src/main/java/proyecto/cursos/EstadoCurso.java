@@ -30,7 +30,7 @@ public class EstadoCurso implements ExecutionListener {
             }
             registrar(execution, "EN_TRAMITE", tipoDocumento == null ? null : (String) tipoDocumento.getValue(execution));
         } else {
-            Object resultado = execution.getVariable("resultado");
+            Object resultado = execution.getVariable("estadoFinal");
             if (execution.isEnded() && resultado instanceof String && CIERRES.contains(resultado)) {
                 registrar(execution, (String) resultado, null);
             }

@@ -7,10 +7,10 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import javax.swing.*;
-import proyecto.cursos.MotorRest;
+import proyecto.cursos.ClienteRestFlowable;
 
 public final class AppComunicaciones {
-    private final MotorRest motor;
+    private final ClienteRestFlowable motor;
     private final JFrame ventana = new JFrame("Simulador de comunicaciones de la empresa");
     private final JComboBox<String> solicitud = new JComboBox<>();
     private final JComboBox<String> mensaje = new JComboBox<>();
@@ -23,7 +23,7 @@ public final class AppComunicaciones {
     private Map<String, String> mensajes = Map.of();
     private boolean ocupado;
 
-    private AppComunicaciones(MotorRest motor) {
+    private AppComunicaciones(ClienteRestFlowable motor) {
         this.motor = motor;
         var formulario = new JPanel(new GridLayout(3, 2, 8, 8));
         formulario.add(new JLabel("Solicitud"));
@@ -61,7 +61,7 @@ public final class AppComunicaciones {
     }
 
     public static void main(String[] args) {
-        MotorRest motor = SimularComunicaciones.conectar();
+        ClienteRestFlowable motor = SimularComunicaciones.conectar();
         SwingUtilities.invokeLater(() -> new AppComunicaciones(motor));
     }
 

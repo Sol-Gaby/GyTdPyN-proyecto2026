@@ -18,7 +18,7 @@ COPY (
         FROM act_hi_procinst p
         JOIN act_re_procdef d ON d.id_ = p.proc_def_id_
         LEFT JOIN act_hi_varinst v ON v.proc_inst_id_ = p.proc_inst_id_
-            AND v.execution_id_ = p.proc_inst_id_ AND v.name_ = 'resultado' AND v.task_id_ IS NULL
+            AND v.execution_id_ = p.proc_inst_id_ AND v.name_ = 'estadoFinal' AND v.task_id_ IS NULL
             AND v.text_ IN ('NO_VIABLE', 'RECHAZADO', 'SIN_RESPUESTA')
         WHERE d.key_ = 'Process_Curso' AND p.delete_reason_ IS NULL
             AND EXISTS (

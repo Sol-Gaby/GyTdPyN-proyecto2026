@@ -13,7 +13,7 @@ import org.flowable.engine.ProcessEngine;
 import org.flowable.engine.history.HistoricActivityInstance;
 
 /** Consultas 4.3 sobre todas las versiones de Process_Curso. */
-public final class AnalisisHistorico {
+public final class InformeHistoricoCursos {
     private static final String CLAVE = "Process_Curso";
 
     private static final class Informe {
@@ -69,7 +69,7 @@ public final class AnalisisHistorico {
     private static Informe consultar(ProcessEngine motor) {
         var informe = new Informe();
         var historial = motor.getHistoryService();
-        for (String grupo : List.of("administracion", "docentes")) {
+        for (String grupo : List.of("gestion_academica", "profesores")) {
             motor.getIdentityService().createUserQuery().memberOfGroup(grupo).list()
                     .forEach(usuario -> informe.tareas.put(usuario.getId(), 0L));
         }
@@ -100,7 +100,7 @@ public final class AnalisisHistorico {
     }
 
     public static void main(String[] args) {
-        ProcessEngine motor = ConexionMotor.abrir();
+        ProcessEngine motor = ConexionFlowable.abrir();
         try {
             consultar(motor).imprimir();
         } finally {

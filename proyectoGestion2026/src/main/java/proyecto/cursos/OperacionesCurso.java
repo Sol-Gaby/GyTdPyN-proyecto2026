@@ -23,18 +23,18 @@ public class OperacionesCurso implements JavaDelegate {
                 contarCursos(execution);
                 break;
             case "Activity_0iibzwu":
-                execution.setVariable("resultado", "NO_VIABLE");
+                execution.setVariable("estadoFinal", "NO_VIABLE");
                 notificar(execution, "Solicitud no viable");
                 break;
             case "Enviar":
-                execution.setVariable("recordatorios", 0);
+                execution.setVariable("intentosRecordatorio", 0);
                 Object version = execution.getVariable("versionPropuesta");
                 execution.setVariable("versionPropuesta", version == null ? 1 : ((Number) version).intValue() + 1);
                 notificar(execution, "Propuesta enviada");
                 break;
             case "Recordatorio":
-                int enviados = (Integer) execution.getVariable("recordatorios");
-                execution.setVariable("recordatorios", enviados + 1);
+                int enviados = (Integer) execution.getVariable("intentosRecordatorio");
+                execution.setVariable("intentosRecordatorio", enviados + 1);
                 notificar(execution, "Recordatorio " + (enviados + 1) + " enviado");
                 break;
             case "ValidarModificaciones":
@@ -66,7 +66,7 @@ public class OperacionesCurso implements JavaDelegate {
                 execution.setVariable("aulaVirtualLiberada", true);
                 break;
             case "Activity_12e0et1":
-                execution.setVariable("resultado", "CANCELADO");
+                execution.setVariable("estadoFinal", "CANCELADO");
                 notificar(execution, "Cancelación comunicada a la empresa");
                 break;
             case "ComprobarEquipoLiberado": // Compatibilidad con cancelaciones ya desplegadas.
@@ -90,7 +90,7 @@ public class OperacionesCurso implements JavaDelegate {
         String clave = motor.getRepositoryService().getProcessDefinition(execution.getProcessDefinitionId()).getKey();
         long cantidad = motor.getRuntimeService().createProcessInstanceQuery().processDefinitionKey(clave).list()
                 .stream().filter(instancia -> !instancia.getId().equals(execution.getProcessInstanceId())).count();
-        execution.setVariable("cantidadOtrosCursos", cantidad);
+        execution.setVariable("totalCursosVigentes", cantidad);
 
         Object plazo = execution.getVariable("plazoRespuesta");
         if (plazo == null) {

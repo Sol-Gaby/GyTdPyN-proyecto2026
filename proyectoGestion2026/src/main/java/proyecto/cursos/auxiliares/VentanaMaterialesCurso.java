@@ -13,8 +13,8 @@ import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
 import org.flowable.engine.ProcessEngine;
 
-public final class AppMateriales extends JFrame {
-    private final ServicioMateriales servicio;
+public final class VentanaMaterialesCurso extends JFrame {
+    private final GestionTareasMateriales servicio;
     private final JTextField usuario = new JTextField(12);
     private final JPasswordField clave = new JPasswordField(12);
     private final JButton iniciar = new JButton("Ingresar");
@@ -30,16 +30,16 @@ public final class AppMateriales extends JFrame {
 
     public static void main(String[] argumentos) {
         try {
-            ProcessEngine motor = ConexionMotor.abrir();
-            SwingUtilities.invokeLater(() -> new AppMateriales(motor).setVisible(true));
+            ProcessEngine motor = ConexionFlowable.abrir();
+            SwingUtilities.invokeLater(() -> new VentanaMaterialesCurso(motor).setVisible(true));
         } catch (RuntimeException error) {
             JOptionPane.showMessageDialog(null, error.getMessage(), "Conexión con Flowable", JOptionPane.ERROR_MESSAGE);
         }
     }
 
-    private AppMateriales(ProcessEngine motor) {
+    private VentanaMaterialesCurso(ProcessEngine motor) {
         super("Preparación de materiales");
-        servicio = new ServicioMateriales(motor);
+        servicio = new GestionTareasMateriales(motor);
         JPanel ingreso = new JPanel(new FlowLayout(FlowLayout.LEFT));
         ingreso.add(new JLabel("Usuario"));
         ingreso.add(usuario);
@@ -153,7 +153,7 @@ public final class AppMateriales extends JFrame {
                     if (cambio) {
                         mostrar(List.of(), "Actualizá las tareas antes de reintentar.");
                     }
-                    JOptionPane.showMessageDialog(AppMateriales.this, error.getCause().getMessage(),
+                    JOptionPane.showMessageDialog(VentanaMaterialesCurso.this, error.getCause().getMessage(),
                             "Operación de Flowable", JOptionPane.ERROR_MESSAGE);
                 } catch (InterruptedException error) {
                     Thread.currentThread().interrupt();
@@ -165,12 +165,12 @@ public final class AppMateriales extends JFrame {
         }.execute();
     }
 
-    private ServicioMateriales.Fila seleccionada() {
+    private GestionTareasMateriales.Fila seleccionada() {
         int indice = tabla.getSelectedRow();
         return indice < 0 ? null : modelo.filas.get(tabla.convertRowIndexToModel(indice));
     }
 
-    private void mostrar(List<ServicioMateriales.Fila> filas, String mensaje) {
+    private void mostrar(List<GestionTareasMateriales.Fila> filas, String mensaje) {
         tabla.clearSelection();
         modelo.filas = filas;
         modelo.fireTableDataChanged();
@@ -191,7 +191,7 @@ public final class AppMateriales extends JFrame {
 
     private static final class ModeloTareas extends AbstractTableModel {
         private static final String[] COLUMNAS = {"Tarea", "Instancia", "Actividad", "Disponibilidad"};
-        private List<ServicioMateriales.Fila> filas = List.of();
+        private List<GestionTareasMateriales.Fila> filas = List.of();
 
         @Override public int getRowCount() { return filas.size(); }
         @Override public int getColumnCount() { return COLUMNAS.length; }

@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.stream.Collectors;
-import proyecto.cursos.MotorRest;
+import proyecto.cursos.ClienteRestFlowable;
 
 /** Interfaz de consola y operaciones REST compartidas con la ventana de simulación. */
 public final class SimularComunicaciones {
@@ -20,7 +20,7 @@ public final class SimularComunicaciones {
     private static final ObjectMapper JSON = new ObjectMapper();
 
     public static void main(String[] args) {
-        MotorRest motor = conectar();
+        ClienteRestFlowable motor = conectar();
         try (Scanner entrada = new Scanner(System.in)) {
             while (true) {
                 var solicitudes = solicitudes(motor);
@@ -55,15 +55,15 @@ public final class SimularComunicaciones {
         }
     }
 
-    static MotorRest conectar() {
+    static ClienteRestFlowable conectar() {
         String clave = System.getenv("CURSOS_REST_CLAVE");
         if (clave == null || clave.isBlank()) throw new IllegalStateException("Definí CURSOS_REST_CLAVE");
-        return new MotorRest(System.getenv().getOrDefault("CURSOS_REST_URL", "http://localhost:8082/flowable-ui"),
+        return new ClienteRestFlowable(System.getenv().getOrDefault("CURSOS_REST_URL", "http://localhost:8082/flowable-ui"),
                 System.getenv().getOrDefault("CURSOS_REST_USUARIO", "admin"), clave);
     }
 
     // El formulario y la consola muestran la misma referencia y el ID que devuelve el portal.
-    static Map<String, String> solicitudes(MotorRest motor) {
+    static Map<String, String> solicitudes(ClienteRestFlowable motor) {
         var solicitudes = new LinkedHashMap<String, String>();
         for (var proceso : motor.listar("/runtime/process-instances?processDefinitionKey=Process_Curso")) {
             String id = proceso.path("id").asText();
@@ -73,11 +73,11 @@ public final class SimularComunicaciones {
         return solicitudes;
     }
 
-    static Map<String, String> disponibles(MotorRest motor, String id) {
+    static Map<String, String> disponibles(ClienteRestFlowable motor, String id) {
         var disponibles = new LinkedHashMap<String, String>();
         for (String mensaje : MENSAJES) {
-            var filas = motor.listar("/runtime/executions?processInstanceId=" + MotorRest.codificar(id)
-                    + "&messageEventSubscriptionName=" + MotorRest.codificar(mensaje));
+            var filas = motor.listar("/runtime/executions?processInstanceId=" + ClienteRestFlowable.codificar(id)
+                    + "&messageEventSubscriptionName=" + ClienteRestFlowable.codificar(mensaje));
             if (filas.size() == 1) disponibles.put(mensaje, filas.get(0).path("id").asText());
         }
         return disponibles;
@@ -92,7 +92,7 @@ public final class SimularComunicaciones {
         }
     }
 
-    static void enviar(MotorRest motor, String ejecucion, String mensaje, String valor) {
+    static void enviar(ClienteRestFlowable motor, String ejecucion, String mensaje, String valor) {
         String dato = valor.trim();
         String campo = campo(mensaje);
         if (campo != null && dato.isEmpty()) throw new IllegalArgumentException("Falta " + campo);
@@ -117,7 +117,7 @@ public final class SimularComunicaciones {
             default:
                 variables = List.of();
         }
-        motor.llamar("PUT", "/runtime/executions/" + MotorRest.codificar(ejecucion),
+        motor.llamar("PUT", "/runtime/executions/" + ClienteRestFlowable.codificar(ejecucion),
                 Map.of("action", "messageEventReceived", "messageName", mensaje, "variables", variables));
     }
 
