@@ -361,8 +361,29 @@ class OrganizacionCursosTest {
                 () -> motor.getTaskService().setAssignee(tarea, "adminCursos")));
         assertEquals("jefeAdmin", tarea(id, "Propuesta").getAssignee());
         completar(id, "Propuesta", PROPUESTA);
+        assertNull(tareaOpcional(id, "Propuesta"));
         assertNotNull(espera(id, "Aceptación"));
         assertEquals("EN_TRAMITE", estadoInstitucional(id));
+    }
+
+    @Test
+    void completarPropuestaEncolaSuDocumentoConLosDatosCargados() throws SQLException {
+        String id = iniciar();
+        completar(id, "Propuesta", PROPUESTA);
+
+        String sql = "SELECT programa, presupuesto, fechas_posibles FROM cursos_pendientes "
+                + "WHERE proceso_id = ? AND documento_tipo = 'PROPUESTA'";
+        try (Connection conexion = configuracion.getDataSource().getConnection();
+                PreparedStatement consulta = conexion.prepareStatement(sql)) {
+            consulta.setString(1, id);
+            try (ResultSet fila = consulta.executeQuery()) {
+                assertTrue(fila.next());
+                assertEquals(PROPUESTA.get("programa"), fila.getString("programa"));
+                assertEquals(0, fila.getBigDecimal("presupuesto").compareTo(java.math.BigDecimal.valueOf(1000)));
+                assertEquals(PROPUESTA.get("fechasPosibles"), fila.getString("fechas_posibles"));
+                assertFalse(fila.next());
+            }
+        }
     }
 
     @Test

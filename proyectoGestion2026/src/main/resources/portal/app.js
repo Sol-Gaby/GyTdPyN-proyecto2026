@@ -34,14 +34,12 @@ registro.addEventListener('submit', async e => {
     boton.disabled = true;
     const aviso = document.querySelector('#registro-estado');
     try {
-        const datos = Object.fromEntries(new FormData(registro));
         const resultado = await api('solicitudes', 'POST', {
-            ...datos,
-            solicitudId: referencia
+            ...Object.fromEntries(new FormData(registro)), solicitudId: referencia
         }, null);
-
-        aviso.textContent = 'Solicitud registrada para la empresa '
-            + datos.empresaCodigo.trim() + ' · ' + datos.empresaNombre.trim();
+        aviso.textContent = 'Solicitud registrada. Instancia ' + resultado.processInstanceId
+            + '. Referencia ' + resultado.referenciaSolicitud
+            + '. Usuario para el seguimiento después de aceptar: ' + resultado.usuarioEmpresa;
         referencia = crypto.randomUUID();
         registro.reset();
     } catch (error) {
@@ -94,14 +92,28 @@ async function cargar() {
                 bloque.append(lista);
             }
         } else {
-            const empresaSolicitud = [fila.empresaCodigo, fila.empresaNombre]
-                .filter(Boolean)
-                .join(' · ');
-            bloque.append(nodo('p', empresaSolicitud
-                ? 'Empresa ' + empresaSolicitud
-                : 'Instancia ' + fila.processInstanceId));
+            bloque.append(nodo('p', 'Instancia ' + fila.processInstanceId));
+            agregarAccionDeTarea(fila, bloque);
         }
         contenido.append(bloque);
+    }
+}
+
+function agregarAccionDeTarea(tarea, bloque) {
+    if (!tarea.assignee) {
+        bloque.append(boton('Reclamar', () => actuar(tarea.id, 'reclamar', {})));
+        return;
+    }
+
+    switch (tarea.taskDefinitionKey) {
+        case 'Propuesta':
+            bloque.append(boton('Elaborar propuesta', () => abrir(tarea, bloque)));
+            break;
+        case 'Archivar':
+            bloque.append(boton('Archivar solicitud', () => actuar(tarea.id, 'completar', {})));
+            break;
+        default:
+            bloque.append(boton('Abrir tarea', () => abrir(tarea, bloque)));
     }
 }
 
@@ -109,7 +121,7 @@ const campos = {
     Propuesta: [['programa','Programa','texto'],['presupuesto','Presupuesto','number'],['fechasPosibles','Fechas posibles','text']],
     Revisar: [['programa','Programa','texto'],['presupuesto','Presupuesto','number'],['fechasPosibles','Fechas posibles','text']],
     Activity_12i2hpf: [['requiereAula','Aula física','checkbox'],['requierePlataforma','Aula virtual','checkbox'],['requiereEquipamiento','Equipamiento especial','checkbox']],
-    Activity_1018bdz: [['docenteAsignado','Docente','profesores']],
+    Activity_1018bdz: [['docenteAsignado','Docente','docentes']],
     Informe: [['informeResultados','Informe de resultados','texto']]
 };
 
@@ -155,9 +167,9 @@ async function abrir(tarea, bloque) {
     const form = nodo('form');
     for (const [id, titulo, tipo] of campos[clave] || []) {
         const label = nodo('label', titulo);
-        const input = nodo(tipo === 'texto' ? 'textarea' : tipo === 'profesores' ? 'select' : 'input');
+        const input = nodo(tipo === 'texto' ? 'textarea' : tipo === 'docentes' ? 'select' : 'input');
         input.name = id;
-        if (tipo === 'profesores') {
+        if (tipo === 'docentes') {
             for (const docente of ['jefeDocente','docente1','docente2']) {
                 const opcion = nodo('option', docente);
                 opcion.value = docente;
@@ -170,7 +182,8 @@ async function abrir(tarea, bloque) {
         label.append(input);
         form.append(label);
     }
-    const enviar = nodo('boton_enviar', 'Completar');
+    const enviar = nodo('button', clave === 'Propuesta' ? 'Completar propuesta' : 'Completar');
+    enviar.type = 'submit';
     form.append(enviar);
     form.onsubmit = async e => {
         e.preventDefault();
