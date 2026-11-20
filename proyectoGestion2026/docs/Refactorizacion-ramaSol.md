@@ -19,7 +19,7 @@ Las rutas parten de `proyectoGestion2026/src/main/java/proyecto/cursos/`. El arc
 ### Invocaciones y documentación actualizadas
 
 - [CuentaEmpresa.java](../src/main/java/proyecto/cursos/CuentaEmpresa.java) instancia el repositorio institucional.
-- [ServidorCursos68.java](../src/main/java/proyecto/cursos/ServidorCursos68.java) importa el controlador nuevo, configura el cliente REST y el repositorio, y conecta la autenticación a la cadena de seguridad.
+- [servidor_Institucional.java](../src/main/java/proyecto/cursos/servidor_Institucional.java) importa el controlador nuevo, configura el cliente REST y el repositorio, y conecta la autenticación a la cadena de seguridad.
 - [AppComunicaciones.java](../src/main/java/proyecto/cursos/auxiliares/AppComunicaciones.java) y [SimularComunicaciones.java](../src/main/java/proyecto/cursos/auxiliares/SimularComunicaciones.java) usan el nuevo nombre del cliente REST.
 - [Predefinitiva.md](Predefinitiva.md) y [Version2.md](Version2.md) usan los nuevos nombres y comandos. La columna **Adjunto** de `Version2.md` identifica los archivos originales que sirvieron de referencia.
 
@@ -39,13 +39,19 @@ Las rutas parten de `proyectoGestion2026/src/main/java/proyecto/cursos/`. El arc
 - Los listeners y delegados del ejecutable ya concentran las funciones de los adjuntos. Conservan sus nombres actuales porque Flowable guarda referencias a esas clases en las definiciones desplegadas.
 - La ventana de materiales, su servicio y la conexión se mantienen separados. El informe histórico también usa la conexión y puede ejecutarse sin abrir la interfaz Swing.
 - El controlador del portal coordina peticiones. El cliente HTTP, las reglas de los formularios, la autenticación y el repositorio cumplen funciones separadas. Esta revisión conserva esas responsabilidades y el flujo de finalización de propuestas.
-- `ServidorCursos68.java` está en uso. [spring.factories](../src/main/resources/META-INF/spring.factories) lo registra al arrancar Flowable. La configuración incorpora el portal, su cadena de seguridad y los componentes que necesita.
+- `servidor_Institucional.java` está en uso. [spring.factories](../src/main/resources/META-INF/spring.factories) lo registra al arrancar Flowable. La configuración incorpora el portal, su cadena de seguridad y los componentes que necesita.
 
 ### Archivos candidatos a limpieza
 
 - [ProbarFlowable.java](../src/main/java/proyecto/cursos/ProbarFlowable.java) es una comprobación manual de disponibilidad de una clase. No encontré invocaciones desde el proyecto ni desde las guías actuales.
 - [flowable.cfg_167785612063.xml](../src/test/resources/flowable.cfg_167785612063.xml) es una configuración de ejemplo. La suite actual configura su motor H2 desde Java y no encontré una referencia a ese archivo.
 - [Miprimerproceso.bpmn20.xml](../src/main/resources/processes/Miprimerproceso.bpmn20.xml) sí se carga en una prueba. Si se limpia la carpeta de procesos de producción, conviene moverlo a los recursos de prueba y conservar ese caso.
+
+## Configuración del portal y referencias de Flowable
+
+- `ServidorCursos68.java` pasó a llamarse `servidor_Institucional.java`. El nuevo nombre se usa en la declaración de clase, en el import de su configuración de seguridad y en `META-INF/spring.factories`.
+- Spring carga esta configuración al levantar Flowable. Los comandos `exec:java` siguen apuntando a los programas auxiliares y al instalador, que tienen sus propios métodos `main`.
+- El BPMN ejecutable referencia directamente a `EstadoCurso`, `OperacionesCurso` y `TareasCurso`. El renombrado conserva esas referencias y las rutas REST. Los formularios, el modelo BPMN y el DMN pueden conservarse al reconstruir la aplicación.
 
 ## Comandos actualizados
 

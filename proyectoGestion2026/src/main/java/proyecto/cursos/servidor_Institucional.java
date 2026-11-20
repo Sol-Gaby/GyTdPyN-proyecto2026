@@ -15,8 +15,8 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnProperty(name = "cursos.institucion.jdbc-url")
-@Import({ControladorPortalCursos.class, ServidorCursos68.SeguridadPortal.class})
-public class ServidorCursos68 {
+@Import({ControladorPortalCursos.class, servidor_Institucional.SeguridadPortal.class})
+public class servidor_Institucional {
     @Bean
     RepositorioInstitucional institucion(@Value("${cursos.institucion.jdbc-url}") String jdbc,
             @Value("${spring.datasource.username}") String usuario, @Value("${spring.datasource.password}") String clave) {
