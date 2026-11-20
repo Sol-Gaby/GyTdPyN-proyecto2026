@@ -1,4 +1,6 @@
-# Gestión de cursos de capacitación
+# Proyecto Final de Gestion de Procesos de Negocios 2026
+
+## GESTION DE CURSOS DE CAPACITACION    
 
 **Integrantes**
 
@@ -7,7 +9,9 @@
 
 ## Objetivo del proyecto
 
-En este trabajo implementamos en Flowable el proceso que sigue una institución cuando una empresa solicita un curso de capacitación. Desde el portal se registra la solicitud y se sigue su avance. El proceso permite elaborar la propuesta, preparar el curso y cerrar el expediente. Usamos PostgreSQL para guardar los datos de las solicitudes, las propuestas y el resultado de cada curso.
+En este trabajo implementamos en Flowable el proceso que sigue una institución cuando una empresa solicita un curso de capacitación. 
+Desde el portal se registra la solicitud y se sigue su avance. El proceso permite elaborar la propuesta, preparar el curso y cerrar el expediente. 
+Usamos PostgreSQL para guardar los datos de las solicitudes, las propuestas y el resultado de cada curso.
 
 ## Cómo levantar el proyecto
 
@@ -24,8 +28,8 @@ Si ya tenemos un archivo `.env` en esa carpeta, usamos el que veníamos utilizan
 ```dotenv
 POSTGRES_DB=flowable
 POSTGRES_USER=flowable
-POSTGRES_PASSWORD=ELEGIR_CLAVE_POSTGRES
-CURSOS_PERSONAL_PASSWORD=ELEGIR_CLAVE_PERSONAL
+POSTGRES_PASSWORD=123
+CURSOS_PERSONAL_123
 ```
 
 `POSTGRES_PASSWORD` se usa para conectar con la base. `CURSOS_PERSONAL_PASSWORD` se asigna al personal que se crea al instalar el proceso. Si ya existe un volumen de PostgreSQL, usamos la contraseña con la que se configuró originalmente.
@@ -50,10 +54,10 @@ Abrimos [Flowable UI](http://localhost:8082/flowable-ui/) y esperamos a que apar
 docker compose exec -T flowable java -cp "/app/WEB-INF/lib/*" proyecto.cursos.InstalarCursos
 ```
 
-El instalador publica el proceso `Process_Curso`, la tabla de decisión y los formularios. También crea los usuarios de personal que falten. Esperamos que aparezca **Process_Curso disponible**.
+El instalador publica el proceso "Process_Curso", la tabla de decisión y los formularios. También crea los usuarios de personal que falten. Esperamos que aparezca **Process_Curso disponible**.
 
 ### 4. Abrir el portal y hacer una prueba
 
-Entramos al [portal de cursos](http://localhost:8082/flowable-ui/cursos/) y completamos **Solicitar una capacitación**. Después ingresamos como `jefeAdmin` con la contraseña de personal que configuramos al crear la cuenta. Para una solicitud viable, debe aparecer **Registrar y elaborar propuesta**. Abrimos la tarea, cargamos el programa, el presupuesto y las fechas posibles, y pulsamos **Completar propuesta**.
+Entramos al [portal de cursos](http://localhost:8082/flowable-ui/cursos/) y completamos "Solicitar una capacitación". Después ingresamos como `jefeAdmin` con la contraseña de personal que configuramos al crear la cuenta. Para una solicitud viable, debe aparecer _Registrar y elaborar propuesta_. Abrimos la tarea, cargamos el programa, el presupuesto y las fechas posibles, y pulsamos _Completar propuesta_.
 
-Si queremos comprobar la definición desplegada, entramos a **Flowable UI → Admin → Process Definitions** y buscamos **Organizar curso de capacitación**. En una instalación nueva, la cuenta de demostración de Flowable UI es `admin` con contraseña `test`.
+Si queremos comprobar la definición desplegada, entramos a **Flowable UI → Admin → Process Definitions** y buscamos _Organizar curso de capacitación_. En una instalación nueva, la cuenta de demostración de Flowable UI es "admin" con contraseña "test".
