@@ -93,10 +93,27 @@ async function cargar() {
             }
         } else {
             bloque.append(nodo('p', 'Instancia ' + fila.processInstanceId));
-            if (!fila.assignee) bloque.append(boton('Reclamar', () => actuar(fila.id, 'reclamar', {})));
-            else bloque.append(boton('Abrir tarea', () => abrir(fila, bloque)));
+            agregarAccionDeTarea(fila, bloque);
         }
         contenido.append(bloque);
+    }
+}
+
+function agregarAccionDeTarea(tarea, bloque) {
+    if (!tarea.assignee) {
+        bloque.append(boton('Reclamar', () => actuar(tarea.id, 'reclamar', {})));
+        return;
+    }
+
+    switch (tarea.taskDefinitionKey) {
+        case 'Propuesta':
+            bloque.append(boton('Elaborar propuesta', () => abrir(tarea, bloque)));
+            break;
+        case 'Archivar':
+            bloque.append(boton('Archivar solicitud', () => actuar(tarea.id, 'completar', {})));
+            break;
+        default:
+            bloque.append(boton('Abrir tarea', () => abrir(tarea, bloque)));
     }
 }
 
@@ -165,7 +182,8 @@ async function abrir(tarea, bloque) {
         label.append(input);
         form.append(label);
     }
-    const enviar = nodo('button', 'Completar');
+    const enviar = nodo('button', clave === 'Propuesta' ? 'Completar propuesta' : 'Completar');
+    enviar.type = 'submit';
     form.append(enviar);
     form.onsubmit = async e => {
         e.preventDefault();
