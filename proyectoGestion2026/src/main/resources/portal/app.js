@@ -37,8 +37,8 @@ registro.addEventListener('submit', async e => {
         const resultado = await api('solicitudes', 'POST', {
             ...Object.fromEntries(new FormData(registro)), solicitudId: referencia
         }, null);
-        aviso.textContent = 'Solicitud registrada. Instancia ' + resultado.processInstanceId
-            + '. Referencia ' + resultado.referenciaSolicitud
+        aviso.textContent = 'Solicitud registrada. Instancia ' + resultado.processInstanceId.toString()
+            + '. Referencia ' + resultado.referenciaSolicitud.toString()
             + '. Usuario para el seguimiento después de aceptar: ' + resultado.usuarioEmpresa;
         referencia = crypto.randomUUID();
         registro.reset();
@@ -110,7 +110,7 @@ function agregarAccionDeTarea(tarea, bloque) {
             bloque.append(boton('Elaborar propuesta', () => abrir(tarea, bloque)));
             break;
         case 'Archivar':
-            bloque.append(boton('Archivar solicitud', () => actuar(tarea.id, 'completar', {})));
+            bloque.append(boton('Archivar solicitud', () => actuar(tarea, tarea.id, 'completar', {})));
             break;
         default:
             bloque.append(boton('Abrir tarea', () => abrir(tarea, bloque)));

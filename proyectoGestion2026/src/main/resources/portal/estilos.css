@@ -1,7 +1,7 @@
 :root {
     color-scheme: light;
     font: 16px/1.45 system-ui, sans-serif;
-    color: #340761;
+    color: #070e61;
     background: #f2f5f8;
 }
 
@@ -12,7 +12,7 @@
 body { margin: 0; }
 
 header {
-    background: #310044;
+    background: #000944;
     color: white;
     padding: 1rem max(1rem, calc((100% - 960px)/2));
     display: flex;
