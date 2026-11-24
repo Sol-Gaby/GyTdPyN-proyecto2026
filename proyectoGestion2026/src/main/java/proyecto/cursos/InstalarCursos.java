@@ -13,7 +13,7 @@ import org.flowable.idm.api.User;
 
 /** Instala el modelo y los usuarios de demostración en la base del motor. */
 public class InstalarCursos {
-    public static final String BPMN = "processes/organizacion-cursos.bpmn20.xml";
+    public static final String BPMN = "processes/Organizar_curso_de_capacitación.bpmn20.xml";
     public static final String DMN = "decisions/viabilidad-curso.dmn";
 
     public static void main(String[] args) {

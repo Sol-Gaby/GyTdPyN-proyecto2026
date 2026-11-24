@@ -24,13 +24,14 @@ public class TareasCurso implements TaskListener {
     private static final String RESPONSABLE = "cursosResponsable";
     private static final String SIN_RESPONSABLE = "";
     private static final Set<String> TAREAS_ADMINISTRACION = Set.of(
-            "Material", "Activity_12i2hpf", "Virtual", "Equipo", "Activity_1m08pcl");
+            "Materiales", "evaluar_recursos", "Virtual", "contrato_equipo", "liberar_equipo");
 
     @Override
     public void notify(DelegateTask task) {
         ProcessEngineConfigurationImpl motor = CommandContextUtil.getProcessEngineConfiguration();
+        String clave = IdentificadoresCurso.actual(task.getTaskDefinitionKey());
         if (EVENTNAME_CREATE.equals(task.getEventName())) {
-            if ("Lista".equals(task.getTaskDefinitionKey())) {
+            if ("confeccion_lista".equals(clave)) {
                 asignarLista(task, motor);
             }
             task.setVariableLocal(RESPONSABLE, task.getAssignee() == null ? SIN_RESPONSABLE : task.getAssignee());
@@ -46,12 +47,12 @@ public class TareasCurso implements TaskListener {
         if (!task.getAssignee().equals(usuarioActual())) {
             throw new FlowableForbiddenException("Solo el responsable puede completar la tarea");
         }
-        if (TAREAS_ADMINISTRACION.contains(task.getTaskDefinitionKey()) && !esAdministrativo(motor, task.getAssignee())) {
+        if (TAREAS_ADMINISTRACION.contains(clave) && !esAdministrativo(motor, task.getAssignee())) {
             throw new FlowableForbiddenException("La persona asignada debe pertenecer a Administración");
         }
-        switch (task.getTaskDefinitionKey()) {
-            case "Propuesta":
-            case "Revisar":
+        switch (clave) {
+            case "reg_elav_propuesta":
+            case "revisar_propuesta":
                 exigirTexto(task, "programa");
                 exigirTexto(task, "fechasPosibles");
                 try {
@@ -62,7 +63,7 @@ public class TareasCurso implements TaskListener {
                     throw new FlowableException("El presupuesto debe ser un número mayor o igual a cero", ex);
                 }
                 break;
-            case "Activity_12i2hpf":
+            case "evaluar_recursos":
                 boolean aula = opcion(task, "requiereAula");
                 boolean virtual = opcion(task, "requierePlataforma");
                 boolean equipo = opcion(task, "requiereEquipamiento");
@@ -70,7 +71,7 @@ public class TareasCurso implements TaskListener {
                     throw new FlowableException("Seleccioná al menos un recurso");
                 }
                 break;
-            case "Activity_1018bdz":
+            case "definir_docente_resp":
                 String docente = exigirTexto(task, "docenteAsignado");
                 if (motor.getIdentityService().createUserQuery().memberOfGroup(DOCENTES).userId(docente).count() != 1) {
                     throw new FlowableException("El docente seleccionado no pertenece al grupo profesores");
@@ -82,13 +83,13 @@ public class TareasCurso implements TaskListener {
             case "Virtual":
                 task.setVariable("aulaVirtualLiberada", false);
                 break;
-            case "VerificarCompensaciones":
+            case "verificar_compensaciones":
                 verificarCompensaciones(task);
                 break;
-            case "Equipo":
+            case "contrato_equipo":
                 task.setVariable("equipamientoGestionado", true);
                 break;
-            case "Activity_1m08pcl":
+            case "liberar_equipo":
                 task.setVariable("equipamientoLiberado", true);
                 reanudarCancelacion(task, motor.getRuntimeService());
                 break;
@@ -103,7 +104,7 @@ public class TareasCurso implements TaskListener {
             return; // Asignación inicial del BPMN o del listener que crea la lista.
         }
         String actual = tarea.getAssignee();
-        if (!TAREAS_ADMINISTRACION.contains(tarea.getTaskDefinitionKey())) {
+        if (!TAREAS_ADMINISTRACION.contains(IdentificadoresCurso.actual(tarea.getTaskDefinitionKey()))) {
             if (!anterior.equals(actual)) {
                 throw new FlowableForbiddenException("La tarea está asignada directamente y no admite reclamo ni reasignación");
             }

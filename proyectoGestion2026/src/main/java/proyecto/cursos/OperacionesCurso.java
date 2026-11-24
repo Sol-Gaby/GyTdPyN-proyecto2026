@@ -18,29 +18,29 @@ public class OperacionesCurso implements JavaDelegate {
 
     @Override
     public void execute(DelegateExecution execution) {
-        switch (execution.getCurrentActivityId()) {
-            case "ContarCursos":
+        switch (IdentificadoresCurso.actual(execution.getCurrentActivityId())) {
+            case "contar_cursos":
                 contarCursos(execution);
                 break;
-            case "Activity_0iibzwu":
+            case "notificar_inviabilidad":
                 execution.setVariable("estadoFinal", "NO_VIABLE");
                 notificar(execution, "Solicitud no viable");
                 break;
-            case "Enviar":
+            case "enviar_propuesta":
                 execution.setVariable("intentosRecordatorio", 0);
                 Object version = execution.getVariable("versionPropuesta");
                 execution.setVariable("versionPropuesta", version == null ? 1 : ((Number) version).intValue() + 1);
                 notificar(execution, "Propuesta enviada");
                 break;
-            case "Recordatorio":
+            case "envio_recordatorio":
                 int enviados = (Integer) execution.getVariable("intentosRecordatorio");
                 execution.setVariable("intentosRecordatorio", enviados + 1);
                 notificar(execution, "Recordatorio " + (enviados + 1) + " enviado");
                 break;
-            case "ValidarModificaciones":
+            case "reg_observaciones":
                 exigirTexto(execution, "observaciones");
                 break;
-            case "Activity_1eg7zcl":
+            case "habilita_proceso_empresa":
                 validarFecha(execution);
                 execution.setVariable("accesoEmpresaHabilitado", true);
                 // Las definiciones anteriores inicializan esta variable al aceptar.
@@ -49,7 +49,7 @@ public class OperacionesCurso implements JavaDelegate {
                 execution.setVariable("equipamientoLiberado", false);
                 notificar(execution, "Propuesta aceptada. Habilitación de acceso simulada");
                 break;
-            case "ValidarNomina":
+            case "validar_nomina":
                 exigirTexto(execution, "nomina");
                 break;
             case "Aula":
@@ -65,7 +65,7 @@ public class OperacionesCurso implements JavaDelegate {
             case "Activity_02hrooc":
                 execution.setVariable("aulaVirtualLiberada", true);
                 break;
-            case "Activity_12e0et1":
+            case "notificar_cierre":
                 execution.setVariable("estadoFinal", "CANCELADO");
                 notificar(execution, "Cancelación comunicada a la empresa");
                 break;
@@ -74,7 +74,7 @@ public class OperacionesCurso implements JavaDelegate {
                     throw new FlowableException("Todavía hay equipamiento pendiente de liberación");
                 }
                 break;
-            case "Confirmar":
+            case "envio_confirmacion_curso":
                 notificar(execution, "Curso confirmado");
                 break;
             default:

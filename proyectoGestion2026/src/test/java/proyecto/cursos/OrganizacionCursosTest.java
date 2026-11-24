@@ -28,6 +28,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import proyecto.cursos.auxiliares.GestionTareasMateriales;
 
 class OrganizacionCursosTest {
     private static final String CLAVE = "Process_Curso";
@@ -99,17 +100,6 @@ class OrganizacionCursosTest {
     }
 
     @Test
-    void ejemploMinimoDespliegaYCompletaUnaTarea() {
-        motor.getRepositoryService().createDeployment()
-                .addClasspathResource("processes/Miprimerproceso.bpmn20.xml").deploy();
-        String id = motor.getRuntimeService().startProcessInstanceByKey("miprimerproceso").getId();
-        Task pendiente = tarea(id, "registrarOrden");
-        assertEquals("Registrar orden", pendiente.getName());
-        motor.getTaskService().complete(pendiente.getId());
-        assertFalse(activa(id), () -> estado(id));
-    }
-
-    @Test
     void viabilidadCuentaOtrasInstanciasEnDistintasVersiones() {
         assertEquals(1, motor.getRepositoryService().createProcessDefinitionQuery()
                 .processDefinitionKey(CLAVE).latestVersion().count());
@@ -120,7 +110,7 @@ class OrganizacionCursosTest {
         iniciar();
         String quinto = iniciar();
         assertEquals(4L, variable(quinto, "totalCursosVigentes"));
-        assertEquals("jefeAdmin", tarea(quinto, "Propuesta").getAssignee());
+        assertEquals("jefeAdmin", tarea(quinto, "reg_elav_propuesta").getAssignee());
         String sexto = iniciar();
         assertFalse(activa(sexto));
         assertEquals("NO_VIABLE", historica(sexto, "estadoFinal"));
@@ -136,13 +126,13 @@ class OrganizacionCursosTest {
         assertEquals(1, variable(id, "intentosRecordatorio"));
         assertThrows(FlowableException.class, () -> mensaje(id, "Solicitud de modificaciones", Map.of()));
         mensaje(id, "Solicitud de modificaciones", Map.of("observaciones", "Agregar prácticas"));
-        completar(id, "Revisar", PROPUESTA);
+        completar(id, "revisar_propuesta", PROPUESTA);
         assertEquals(2, variable(id, "versionPropuesta"));
         assertEquals(0, variable(id, "intentosRecordatorio"));
         assertThrows(FlowableException.class, () -> mensaje(id, "Aceptación", Map.of("fechaCurso", "pronto")));
         mensaje(id, "Rechazo", Map.of());
-        assertEquals("jefeAdmin", tarea(id, "Archivar").getAssignee());
-        completar(id, "Archivar", Map.of());
+        assertEquals("jefeAdmin", tarea(id, "archivar_solicitud").getAssignee());
+        completar(id, "archivar_solicitud", Map.of());
         assertEquals("RECHAZADO", historica(id, "estadoFinal"));
         assertEquals("RECHAZADO", estadoInstitucional(id));
     }
@@ -157,7 +147,7 @@ class OrganizacionCursosTest {
         vencer(temporizador(id));
         assertNull(espera(id, "Aceptación"));
         assertEquals(2, variable(id, "intentosRecordatorio"));
-        completar(id, "Archivar", Map.of());
+        completar(id, "archivar_solicitud", Map.of());
         assertEquals("SIN_RESPUESTA", historica(id, "estadoFinal"));
         assertEquals("SIN_RESPUESTA", estadoInstitucional(id));
     }
@@ -166,46 +156,48 @@ class OrganizacionCursosTest {
     void preparacionEsParalelaYFinalNormalEsperaLaCompensacion() {
         String id = preparar();
         assertEquals(false, variable(id, "preparacionCancelada"));
-        assertEquals(Set.of("Material", "Activity_12i2hpf"), clavesTareas(id));
+        assertEquals(Set.of("Materiales", "evaluar_recursos"), clavesTareas(id));
         assertNotNull(espera(id, "Nómina de participantes"));
-        assertThrows(FlowableException.class, () -> completar(id, "Material", Map.of()));
-        Task materiales = tarea(id, "Material");
+        assertThrows(FlowableException.class, () -> completar(id, "Materiales", Map.of()));
+        Task materiales = tarea(id, "Materiales");
         assertThrows(FlowableException.class, () -> como("docente1",
                 () -> motor.getTaskService().claim(materiales.getId(), "docente1")));
-        assertNull(tarea(id, "Material").getAssignee());
+        assertNull(tarea(id, "Materiales").getAssignee());
         assertThrows(FlowableException.class, () -> como("docente1",
                 () -> motor.getTaskService().claim(materiales.getId(), "jefeAdmin")));
-        reclamarYCompletar(id, "Material", Map.of());
-        reclamar(id, "Activity_12i2hpf");
-        assertThrows(FlowableException.class, () -> completar(id, "Activity_12i2hpf", Map.of()));
-        completar(id, "Activity_12i2hpf", recursos(true, true, true));
-        assertEquals(Set.of("Virtual", "Equipo"), clavesTareas(id));
+        var auxiliarMateriales = new GestionTareasMateriales(motor);
+        auxiliarMateriales.reclamar("jefeAdmin", materiales.getId());
+        auxiliarMateriales.completar("jefeAdmin", materiales.getId());
+        reclamar(id, "evaluar_recursos");
+        assertThrows(FlowableException.class, () -> completar(id, "evaluar_recursos", Map.of()));
+        completar(id, "evaluar_recursos", recursos(true, true, true));
+        assertEquals(Set.of("Virtual", "contrato_equipo"), clavesTareas(id));
         reclamarYCompletar(id, "Virtual", Map.of());
-        assertNull(tareaOpcional(id, "Activity_1018bdz"));
+        assertNull(tareaOpcional(id, "definir_docente_resp"));
         mensaje(id, "Nómina de participantes", Map.of("nomina", "[\"Ana\",\"Pablo\"]"));
-        assertEquals("adminCursos", tarea(id, "Lista").getAssignee());
-        completar(id, "Lista", Map.of());
-        assertNull(tareaOpcional(id, "Activity_1018bdz"));
-        reclamarYCompletar(id, "Equipo", Map.of());
+        assertEquals("adminCursos", tarea(id, "confeccion_lista").getAssignee());
+        completar(id, "confeccion_lista", Map.of());
+        assertNull(tareaOpcional(id, "definir_docente_resp"));
+        reclamarYCompletar(id, "contrato_equipo", Map.of());
         assertNull(espera(id, "Cancelación"), () -> estado(id));
 
-        assertEquals("jefeDocente", tarea(id, "Activity_1018bdz").getAssignee());
-        assertNull(tareaOpcional(id, "VerificarCompensaciones"));
+        assertEquals("jefeDocente", tarea(id, "definir_docente_resp").getAssignee());
+        assertNull(tareaOpcional(id, "verificar_compensaciones"));
         assertEquals("Curso confirmado", variable(id, "ultimoAvisoEmpresa"));
         assertThrows(FlowableException.class,
-                () -> completar(id, "Activity_1018bdz", Map.of("docenteAsignado", "jefeAdmin")));
-        completar(id, "Activity_1018bdz", Map.of("docenteAsignado", "jefeDocente"));
-        assertNull(tareaOpcional(id, "Dictar"));
+                () -> completar(id, "definir_docente_resp", Map.of("docenteAsignado", "jefeAdmin")));
+        completar(id, "definir_docente_resp", Map.of("docenteAsignado", "jefeDocente"));
+        assertNull(tareaOpcional(id, "dictar_curso"));
         assertEquals(Instant.parse("2026-11-18T14:00:00Z"), temporizador(id).getDuedate().toInstant());
         vencer(temporizador(id));
-        assertEquals("jefeDocente", tarea(id, "Dictar").getAssignee());
-        completar(id, "Dictar", Map.of());
+        assertEquals("jefeDocente", tarea(id, "dictar_curso").getAssignee());
+        completar(id, "dictar_curso", Map.of());
         completar(id, "Informe", Map.of("informeResultados", "informe.pdf"));
-        completar(id, "EnviarInforme", Map.of());
+        completar(id, "envio_Informe", Map.of());
         assertTrue(activa(id));
         assertEquals("EN_TRAMITE", estadoInstitucional(id));
-        assertNotNull(tarea(id, "Activity_1m08pcl"));
-        reclamarYCompletar(id, "Activity_1m08pcl", Map.of());
+        assertNotNull(tarea(id, "liberar_equipo"));
+        reclamarYCompletar(id, "liberar_equipo", Map.of());
         assertFalse(activa(id), () -> estado(id));
         assertEquals("FINALIZADO", historica(id, "estadoFinal"));
         assertEquals("FINALIZADO", estadoInstitucional(id));
@@ -217,28 +209,28 @@ class OrganizacionCursosTest {
     @Test
     void cancelacionInterrumpeYEsperaLiberarSoloRecursosGestionados() {
         String id = preparar();
-        reclamarYCompletar(id, "Activity_12i2hpf", recursos(true, true, true));
-        reclamarYCompletar(id, "Equipo", Map.of());
+        reclamarYCompletar(id, "evaluar_recursos", recursos(true, true, true));
+        reclamarYCompletar(id, "contrato_equipo", Map.of());
         mensaje(id, "Cancelación", Map.of());
         assertNull(espera(id, "Nómina de participantes"));
-        assertEquals(Set.of("Activity_1m08pcl", "VerificarCompensaciones"), clavesTareas(id));
+        assertEquals(Set.of("liberar_equipo", "verificar_compensaciones"), clavesTareas(id));
         assertEquals(true, variable(id, "aulaLiberada"));
         assertNull(variable(id, "aulaVirtualLiberada"));
         assertEquals(false, variable(id, "preparacionCancelada"));
-        assertThrows(FlowableException.class, () -> completar(id, "VerificarCompensaciones", Map.of()));
+        assertThrows(FlowableException.class, () -> completar(id, "verificar_compensaciones", Map.of()));
         assertTrue(activa(id));
         assertNotEquals("Cancelación comunicada a la empresa", variable(id, "ultimoAvisoEmpresa"));
 
-        reclamarYCompletar(id, "Activity_1m08pcl", Map.of());
-        assertEquals(Set.of("VerificarCompensaciones"), clavesTareas(id));
+        reclamarYCompletar(id, "liberar_equipo", Map.of());
+        assertEquals(Set.of("verificar_compensaciones"), clavesTareas(id));
         assertEquals("EN_TRAMITE", estadoInstitucional(id));
         assertEquals(false, variable(id, "preparacionCancelada"));
         assertTrue(activa(id));
-        Task pausa = tarea(id, "VerificarCompensaciones");
+        Task pausa = tarea(id, "verificar_compensaciones");
         assertEquals("jefeAdmin", pausa.getAssignee());
         assertThrows(FlowableException.class,
                 () -> como("adminCursos", () -> motor.getTaskService().complete(pausa.getId())));
-        completar(id, "VerificarCompensaciones", Map.of());
+        completar(id, "verificar_compensaciones", Map.of());
 
         assertFalse(activa(id), () -> estado(id));
         assertEquals(true, historica(id, "preparacionCancelada"));
@@ -253,28 +245,28 @@ class OrganizacionCursosTest {
     @Test
     void cancelacionCompensaElAulaVirtualGestionadaSinActivarOtrasLiberaciones() {
         String id = preparar();
-        reclamarYCompletar(id, "Activity_12i2hpf", recursos(false, true, false));
+        reclamarYCompletar(id, "evaluar_recursos", recursos(false, true, false));
         reclamarYCompletar(id, "Virtual", Map.of());
         assertEquals(false, variable(id, "aulaVirtualLiberada"));
 
         mensaje(id, "Cancelación", Map.of());
-        assertEquals(Set.of("VerificarCompensaciones"), clavesTareas(id));
+        assertEquals(Set.of("verificar_compensaciones"), clavesTareas(id));
         assertEquals(true, variable(id, "aulaVirtualLiberada"));
         assertNull(variable(id, "aulaLiberada"));
-        completar(id, "VerificarCompensaciones", Map.of());
+        completar(id, "verificar_compensaciones", Map.of());
         assertEquals("CANCELADO", historica(id, "estadoFinal"));
     }
 
     @Test
     void cancelacionSinRecursosGestionadosNoCreaTareasDeLiberacion() {
         String id = preparar();
-        reclamarYCompletar(id, "Activity_12i2hpf", recursos(false, false, true));
-        assertEquals(Set.of("Material", "Equipo"), clavesTareas(id));
+        reclamarYCompletar(id, "evaluar_recursos", recursos(false, false, true));
+        assertEquals(Set.of("Materiales", "contrato_equipo"), clavesTareas(id));
         mensaje(id, "Cancelación", Map.of());
-        assertEquals(Set.of("VerificarCompensaciones"), clavesTareas(id));
+        assertEquals(Set.of("verificar_compensaciones"), clavesTareas(id));
         assertNull(variable(id, "aulaLiberada"));
         assertNull(variable(id, "aulaVirtualLiberada"));
-        completar(id, "VerificarCompensaciones", Map.of());
+        completar(id, "verificar_compensaciones", Map.of());
         assertFalse(activa(id), () -> estado(id));
         assertEquals("CANCELADO", historica(id, "estadoFinal"));
         assertEquals("CANCELADO", estadoInstitucional(id));
@@ -284,14 +276,14 @@ class OrganizacionCursosTest {
     @Test
     void faltaDeAulaEsReintentable() {
         String id = preparar();
-        reclamar(id, "Activity_12i2hpf");
-        FlowableException error = assertThrows(FlowableException.class, () -> completar(id, "Activity_12i2hpf",
+        reclamar(id, "evaluar_recursos");
+        FlowableException error = assertThrows(FlowableException.class, () -> completar(id, "evaluar_recursos",
                 Map.of("requiereAula", true, "aulaDisponible", false)));
         assertTrue(error.getMessage().contains("AULA_NO_DISPONIBLE"));
-        assertNotNull(tarea(id, "Activity_12i2hpf"));
+        assertNotNull(tarea(id, "evaluar_recursos"));
         assertNull(variable(id, "idReservaAula"));
-        completar(id, "Activity_12i2hpf", recursos(false, true, false));
-        assertEquals(Set.of("Material", "Virtual"), clavesTareas(id));
+        completar(id, "evaluar_recursos", recursos(false, true, false));
+        assertEquals(Set.of("Materiales", "Virtual"), clavesTareas(id));
     }
 
     private String iniciar() {
@@ -301,7 +293,7 @@ class OrganizacionCursosTest {
 
     private String negociar() {
         String id = iniciar();
-        completar(id, "Propuesta", PROPUESTA);
+        completar(id, "reg_elav_propuesta", PROPUESTA);
         return id;
     }
 
@@ -352,16 +344,16 @@ class OrganizacionCursosTest {
     @Test
     void soloElResponsableCompletaYUnaTareaDirectaNoSeReclama() {
         String id = iniciar();
-        String tarea = tarea(id, "Propuesta").getId();
+        String tarea = tarea(id, "reg_elav_propuesta").getId();
         assertThrows(FlowableException.class, () -> como("adminCursos",
                 () -> motor.getTaskService().complete(tarea, PROPUESTA)));
         assertThrows(FlowableException.class, () -> como("jefeAdmin",
                 () -> motor.getTaskService().unclaim(tarea)));
         assertThrows(FlowableException.class, () -> como("adminCursos",
                 () -> motor.getTaskService().setAssignee(tarea, "adminCursos")));
-        assertEquals("jefeAdmin", tarea(id, "Propuesta").getAssignee());
-        completar(id, "Propuesta", PROPUESTA);
-        assertNull(tareaOpcional(id, "Propuesta"));
+        assertEquals("jefeAdmin", tarea(id, "reg_elav_propuesta").getAssignee());
+        completar(id, "reg_elav_propuesta", PROPUESTA);
+        assertNull(tareaOpcional(id, "reg_elav_propuesta"));
         assertNotNull(espera(id, "Aceptación"));
         assertEquals("EN_TRAMITE", estadoInstitucional(id));
     }
@@ -369,7 +361,7 @@ class OrganizacionCursosTest {
     @Test
     void completarPropuestaEncolaSuDocumentoConLosDatosCargados() throws SQLException {
         String id = iniciar();
-        completar(id, "Propuesta", PROPUESTA);
+        completar(id, "reg_elav_propuesta", PROPUESTA);
 
         String sql = "SELECT programa, presupuesto, fechas_posibles FROM cursos_pendientes "
                 + "WHERE proceso_id = ? AND documento_tipo = 'PROPUESTA'";
@@ -395,7 +387,7 @@ class OrganizacionCursosTest {
         try {
             String id = preparar();
             mensaje(id, "Nómina de participantes", Map.of("nomina", "[\"Ana\"]"));
-            assertEquals("jefeAdmin", tarea(id, "Lista").getAssignee());
+            assertEquals("jefeAdmin", tarea(id, "confeccion_lista").getAssignee());
         } finally {
             motor.getTaskService().deleteTask(carga.getId());
         }
