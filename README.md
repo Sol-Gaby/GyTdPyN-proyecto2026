@@ -1,6 +1,6 @@
 # Proyecto Final de Gestion de Procesos de Negocios 2026
 
-## GESTION DE CURSOS DE CAPACITACION    
+## GESTION DE CURSOS DE CAPACITACION
 
 **Integrantes**
 
@@ -64,14 +64,19 @@ Si queremos comprobar la definición desplegada, entramos a **Flowable UI → Ad
 
 ### 5. Usuarios para uso del Portal
 
-| Lugar | Usuario | Clave |
-| --- | --- | --- |
-| Portal de Cursos|jefeAdmin | 123 |
-| Portal de Cursos|adminCursos | 123 |
-| Portal de Cursos|jefeDocente | 123 |
-| Portal de Cursos|docente1 | 123 |
-| Portal de Cursos|docente2 | 123 |
-|Portal  de Cursos/ seguimiento| empresa-EMP-PRUEBA (si código de la solicitud = EMP-PRUEBA) | Elegír en CMD con CuentaEmpresa |
-|Postman| Usuario de personal o empresa a probar | 123 |
-|Postman: /process-api/.|admin | 123 |
-|AppMateriales|adminCursos o jefeAdmin | 123 |
+| Lugar                          | Usuario                                                     | Clave                           |
+| ------------------------------ | ----------------------------------------------------------- | ------------------------------- |
+| Portal de Cursos               | jefeAdmin                                                   | 123                             |
+| Portal de Cursos               | adminCursos                                                 | 123                             |
+| Portal de Cursos               | jefeDocente                                                 | 123                             |
+| Portal de Cursos               | docente1                                                    | 123                             |
+| Portal de Cursos               | docente2                                                    | 123                             |
+| Portal  de Cursos/ seguimiento | empresa-EMP-PRUEBA (si código de la solicitud = EMP-PRUEBA) | Elegír en CMD con CuentaEmpresa |
+| Postman                        | Usuario de personal o empresa a probar                      | 123                             |
+| Postman: /process-api/.        | admin                                                       | 123                             |
+| AppMateriales                  | adminCursos o jefeAdmin                                     | 123                             |
+
+## 6. Ejecución de las Aplicaciones Auxiliares y Consultas (Secciones 4.2 y 4.3) Antes de ejecutar las aplicaciones auxiliares desde la carpeta `proyectoGestion2026/`, compilamos el proyecto y copiamos sus dependencias una sola vez:
+
+cd proyectoGestion2026
+mvn -DskipTests package dependency:copy-dependencies -DoutputDirectory=target/lib
