@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:flowable="http://flowable.org/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" typeLanguage="http://www.w3.org/2001/XMLSchema" expressionLanguage="http://www.w3.org/1999/XPath" targetNamespace="http://flowable.org/test" exporter="Flowable Open Source Modeler" exporterVersion="6.8.0">
   <collaboration id="Collaboration">
-    <participant id="rechazo_propuesta" name="Rechazo Propuesta" processRef="Process_Curso"></participant>
+    <participant id="rechazo_propuesta" name="Institucion de Cursos" processRef="Process_Curso"></participant>
   </collaboration>
   <message id="Msg_sol" name="Msg_sol"></message>
   <message id="Msg_acepta" name="Msg_acepta"></message>
@@ -9,7 +9,7 @@
   <message id="Msg_nom" name="Msg_nom"></message>
   <message id="Msg_cancel" name="Msg_cancel"></message>
   <message id="Msg_rechaza" name="Msg_rechaza"></message>
-  <process id="Process_Curso" name="Rechazo Propuesta" isExecutable="true">
+  <process id="Process_Curso" name="Institucion de Cursos" isExecutable="true">
     <extensionElements>
       <flowable:executionListener event="start" class="proyecto.cursos.EstadoCurso"></flowable:executionListener>
       <flowable:executionListener event="end" class="proyecto.cursos.EstadoCurso"></flowable:executionListener>
@@ -28,29 +28,29 @@
       <lane id="administracion" name="Administración">
         <flowNodeRef>Esperar</flowNodeRef>
         <flowNodeRef>Inicio</flowNodeRef>
-        <flowNodeRef>Recordatorio</flowNodeRef>
+        <flowNodeRef>envio_recordatorio</flowNodeRef>
         <flowNodeRef>2_recordatorios</flowNodeRef>
-        <flowNodeRef>aceptar_propuesta</flowNodeRef>
+        <flowNodeRef>msg_aceptar_propuesta</flowNodeRef>
         <flowNodeRef>modificaciones</flowNodeRef>
         <flowNodeRef>notificar_cierre</flowNodeRef>
         <flowNodeRef>fin_por_cancelacion</flowNodeRef>
-        <flowNodeRef>FinSinCurso</flowNodeRef>
-        <flowNodeRef>Preparar</flowNodeRef>
+        <flowNodeRef>solicitud_cerrada</flowNodeRef>
+        <flowNodeRef>preparar_curso</flowNodeRef>
         <flowNodeRef>reg_elav_propuesta</flowNodeRef>
         <flowNodeRef>es_viable</flowNodeRef>
         <flowNodeRef>evaluar_viabilidad</flowNodeRef>
-        <flowNodeRef>Event_18edb9q</flowNodeRef>
-        <flowNodeRef>Activity_0iibzwu</flowNodeRef>
+        <flowNodeRef>fin_inviable</flowNodeRef>
+        <flowNodeRef>notificar_inviabilidad</flowNodeRef>
         <flowNodeRef>envio_confirmacion_curso</flowNodeRef>
         <flowNodeRef>fin_exitoso</flowNodeRef>
         <flowNodeRef>envio_Informe</flowNodeRef>
-        <flowNodeRef>Activity_1eg7zcl</flowNodeRef>
-        <flowNodeRef>enviar</flowNodeRef>
+        <flowNodeRef>habilita_proceso_empresa</flowNodeRef>
+        <flowNodeRef>enviar_propuesta</flowNodeRef>
         <flowNodeRef>reg_observaciones</flowNodeRef>
         <flowNodeRef>cacela_preparacion</flowNodeRef>
         <flowNodeRef>liberar_recursos</flowNodeRef>
         <flowNodeRef>plazo_5dias</flowNodeRef>
-        <flowNodeRef>rechazo</flowNodeRef>
+        <flowNodeRef>msg_rechazo</flowNodeRef>
         <flowNodeRef>revisar_propuesta</flowNodeRef>
         <flowNodeRef>archivar_solicitud</flowNodeRef>
         <flowNodeRef>main3</flowNodeRef>
@@ -58,7 +58,6 @@
         <flowNodeRef>wait3</flowNodeRef>
         <flowNodeRef>wait0</flowNodeRef>
         <flowNodeRef>wait1</flowNodeRef>
-        <flowNodeRef>wait2</flowNodeRef>
         <flowNodeRef>CerrarSolicitud</flowNodeRef>
         <flowNodeRef>main2</flowNodeRef>
         <flowNodeRef>Flow_0upbxn5</flowNodeRef>
@@ -67,7 +66,6 @@
         <flowNodeRef>Rechazado</flowNodeRef>
         <flowNodeRef>ModificarProp</flowNodeRef>
         <flowNodeRef>InformeArchivar</flowNodeRef>
-        <flowNodeRef>Flow_0g8vm9l</flowNodeRef>
         <flowNodeRef>Flow_0kbnm1d</flowNodeRef>
         <flowNodeRef>Flow_0k38d9g</flowNodeRef>
         <flowNodeRef>Flow_0w8xn3l</flowNodeRef>
@@ -82,6 +80,8 @@
         <flowNodeRef>PreparacionNotificar</flowNodeRef>
         <flowNodeRef>sid-30DDC413-C515-42E5-9E0F-10BB41FF9A7F</flowNodeRef>
         <flowNodeRef>PlazoLimite</flowNodeRef>
+        <flowNodeRef>Flow_0g8vm9l</flowNodeRef>
+        <flowNodeRef>wait2</flowNodeRef>
       </lane>
     </laneSet>
     <intermediateCatchEvent id="fecha_programada" name="Fecha programada">
@@ -125,9 +125,9 @@
     <startEvent id="Inicio" name="Solicitud recibida" isInterrupting="true">
       <messageEventDefinition messageRef="Msg_sol"></messageEventDefinition>
     </startEvent>
-    <serviceTask id="Recordatorio" name="Enviar recordatorio" flowable:class="proyecto.cursos.OperacionesCurso"></serviceTask>
+    <serviceTask id="envio_recordatorio" name="Enviar recordatorio" flowable:class="proyecto.cursos.OperacionesCurso"></serviceTask>
     <exclusiveGateway id="2_recordatorios" name="¿Se enviaron 2 recordatorios?"></exclusiveGateway>
-    <intermediateCatchEvent id="aceptar_propuesta" name="Acepta Propuesta">
+    <intermediateCatchEvent id="msg_aceptar_propuesta" name="Acepta Propuesta">
       <messageEventDefinition messageRef="Msg_acepta"></messageEventDefinition>
     </intermediateCatchEvent>
     <intermediateCatchEvent id="modificaciones" name="Modificaciones">
@@ -135,14 +135,14 @@
     </intermediateCatchEvent>
     <serviceTask id="notificar_cierre" name="Notificar Cierre" flowable:class="proyecto.cursos.OperacionesCurso"></serviceTask>
     <endEvent id="fin_por_cancelacion"></endEvent>
-    <endEvent id="FinSinCurso" name="Solicitud cerrada"></endEvent>
-    <subProcess id="Preparar" name="Preparar curso">
+    <endEvent id="solicitud_cerrada" name="Solicitud cerrada"></endEvent>
+    <subProcess id="preparar_curso" name="Preparar curso">
       <extensionElements>
         <flowable:executionListener event="start" expression="${execution.setVariable('preparacionCancelada', false)}"></flowable:executionListener>
       </extensionElements>
       <startEvent id="inicio_preparar_curso" flowable:formFieldValidation="true"></startEvent>
       <parallelGateway id="preparacion_paralelo" name="Preparación en paralelo"></parallelGateway>
-      <intermediateCatchEvent id="nomina" name="Recibir nómina">
+      <intermediateCatchEvent id="recibe_nomina" name="Recibir nómina">
         <messageEventDefinition messageRef="Msg_nom"></messageEventDefinition>
       </intermediateCatchEvent>
       <userTask id="confeccion_lista" name="Confeccionar lista definitiva" flowable:candidateGroups="administracion" flowable:formFieldValidation="true">
@@ -155,7 +155,7 @@
           <modeler:initiator-can-complete xmlns:modeler="http://flowable.org/modeler"><![CDATA[false]]></modeler:initiator-can-complete>
         </extensionElements>
       </userTask>
-      <userTask id="Material" name="Preparar materiales" flowable:candidateGroups="administracion" flowable:formFieldValidation="true">
+      <userTask id="Materiales" name="Preparar materiales" flowable:candidateGroups="administracion" flowable:formFieldValidation="true">
         <extensionElements>
           <flowable:taskListener event="complete" class="proyecto.cursos.TareasCurso"></flowable:taskListener>
           <flowable:taskListener event="create" class="proyecto.cursos.TareasCurso"></flowable:taskListener>
@@ -250,8 +250,8 @@ Recursos" flowable:candidateGroups="administracion" flowable:formKey="cursos-rec
         <compensateEventDefinition></compensateEventDefinition>
       </boundaryEvent>
       <sequenceFlow id="s1" sourceRef="inicio_preparar_curso" targetRef="preparacion_paralelo"></sequenceFlow>
-      <sequenceFlow id="s2" sourceRef="preparacion_paralelo" targetRef="nomina"></sequenceFlow>
-      <sequenceFlow id="s5" sourceRef="preparacion_paralelo" targetRef="Material"></sequenceFlow>
+      <sequenceFlow id="s2" sourceRef="preparacion_paralelo" targetRef="recibe_nomina"></sequenceFlow>
+      <sequenceFlow id="s5" sourceRef="preparacion_paralelo" targetRef="Materiales"></sequenceFlow>
       <sequenceFlow id="s6" sourceRef="preparacion_paralelo" targetRef="evaluar_recursos"></sequenceFlow>
       <sequenceFlow id="or0" name="Presencial" sourceRef="OrInicio" targetRef="Aula">
         <conditionExpression xsi:type="tFormalExpression"><![CDATA[${requiereAula}]]></conditionExpression>
@@ -268,9 +268,9 @@ Recursos" flowable:candidateGroups="administracion" flowable:formKey="cursos-rec
       <sequenceFlow id="s11" sourceRef="OrFin" targetRef="ParFin"></sequenceFlow>
       <sequenceFlow id="s12" sourceRef="ParFin" targetRef="SubFin"></sequenceFlow>
       <sequenceFlow id="Flow_0r6hcyb" sourceRef="evaluar_recursos" targetRef="OrInicio"></sequenceFlow>
-      <sequenceFlow id="Flow_0pbsav2" sourceRef="Material" targetRef="ParFin"></sequenceFlow>
+      <sequenceFlow id="Flow_0pbsav2" sourceRef="Materiales" targetRef="ParFin"></sequenceFlow>
       <sequenceFlow id="Flow_1q09oq9" sourceRef="confeccion_lista" targetRef="ParFin"></sequenceFlow>
-      <sequenceFlow id="Flow_1j917g3" sourceRef="nomina" targetRef="validar_nomina"></sequenceFlow>
+      <sequenceFlow id="Flow_1j917g3" sourceRef="recibe_nomina" targetRef="validar_nomina"></sequenceFlow>
       <sequenceFlow id="NominaLista" sourceRef="validar_nomina" targetRef="confeccion_lista"></sequenceFlow>
       <sequenceFlow id="Association_0oqohax" sourceRef="Event_1ypcc1j" targetRef="liberar_equipo"></sequenceFlow>
       <sequenceFlow id="Association_0f6fnvw" sourceRef="Event_1gsyqer" targetRef="Activity_02hrooc"></sequenceFlow>
@@ -306,8 +306,8 @@ Recursos" flowable:candidateGroups="administracion" flowable:formKey="cursos-rec
         <flowable:decisionReferenceType xmlns:flowable="http://flowable.org/bpmn"><![CDATA[decisionService]]></flowable:decisionReferenceType>
       </extensionElements>
     </serviceTask>
-    <endEvent id="Event_18edb9q"></endEvent>
-    <serviceTask id="Activity_0iibzwu" name="Notificar Desición" flowable:class="proyecto.cursos.OperacionesCurso"></serviceTask>
+    <endEvent id="fin_inviable"></endEvent>
+    <serviceTask id="notificar_inviabilidad" name="Notificar Desición" flowable:class="proyecto.cursos.OperacionesCurso"></serviceTask>
     <serviceTask id="envio_confirmacion_curso" name="Enviar confirmación" flowable:class="proyecto.cursos.OperacionesCurso"></serviceTask>
     <endEvent id="fin_exitoso" name="Curso finalizado">
       <extensionElements>
@@ -322,8 +322,8 @@ Recursos" flowable:candidateGroups="administracion" flowable:formKey="cursos-rec
         <modeler:initiator-can-complete xmlns:modeler="http://flowable.org/modeler"><![CDATA[false]]></modeler:initiator-can-complete>
       </extensionElements>
     </userTask>
-    <serviceTask id="Activity_1eg7zcl" name="Habilitar acceso de la empresa" flowable:class="proyecto.cursos.OperacionesCurso"></serviceTask>
-    <serviceTask id="enviar" name="Enviar propuesta" flowable:class="proyecto.cursos.OperacionesCurso"></serviceTask>
+    <serviceTask id="habilita_proceso_empresa" name="Habilitar acceso de la empresa" flowable:class="proyecto.cursos.OperacionesCurso"></serviceTask>
+    <serviceTask id="enviar_propuesta" name="Enviar propuesta" flowable:class="proyecto.cursos.OperacionesCurso"></serviceTask>
     <serviceTask id="reg_observaciones" name="Registrar observaciones" flowable:class="proyecto.cursos.OperacionesCurso">
       <extensionElements>
         <flowable:executionListener event="start" class="proyecto.cursos.ProyeccionInstitucional"></flowable:executionListener>
@@ -338,7 +338,7 @@ Recursos" flowable:candidateGroups="administracion" flowable:formKey="cursos-rec
         <timeDuration>${plazoRespuesta}</timeDuration>
       </timerEventDefinition>
     </intermediateCatchEvent>
-    <intermediateCatchEvent id="rechazo" name="Rechazo">
+    <intermediateCatchEvent id="msg_rechazo" name="Rechazo">
       <extensionElements>
         <flowable:executionListener event="take" class="proyecto.cursos.EstadoCurso"></flowable:executionListener>
       </extensionElements>
@@ -380,7 +380,7 @@ Recursos" flowable:candidateGroups="administracion" flowable:formKey="cursos-rec
       </extensionElements>
     </sequenceFlow>
     <sequenceFlow id="Flow_0lscijk" sourceRef="definir_docente_resp" targetRef="fecha_programada"></sequenceFlow>
-    <sequenceFlow id="main3" sourceRef="enviar" targetRef="Esperar">
+    <sequenceFlow id="main3" sourceRef="enviar_propuesta" targetRef="Esperar">
       <extensionElements>
         <flowable:executionListener event="take" class="proyecto.cursos.EstadoCurso">
           <flowable:field name="tipoDocumento">
@@ -389,15 +389,14 @@ Recursos" flowable:candidateGroups="administracion" flowable:formKey="cursos-rec
         </flowable:executionListener>
       </extensionElements>
     </sequenceFlow>
-    <sequenceFlow id="VolverEsperar" sourceRef="Recordatorio" targetRef="Esperar"></sequenceFlow>
+    <sequenceFlow id="VolverEsperar" sourceRef="envio_recordatorio" targetRef="Esperar"></sequenceFlow>
     <sequenceFlow id="wait3" sourceRef="Esperar" targetRef="plazo_5dias"></sequenceFlow>
-    <sequenceFlow id="wait0" sourceRef="Esperar" targetRef="aceptar_propuesta"></sequenceFlow>
-    <sequenceFlow id="wait1" sourceRef="Esperar" targetRef="rechazo"></sequenceFlow>
-    <sequenceFlow id="wait2" sourceRef="Esperar" targetRef="modificaciones"></sequenceFlow>
-    <sequenceFlow id="CerrarSolicitud" sourceRef="archivar_solicitud" targetRef="FinSinCurso"></sequenceFlow>
-    <sequenceFlow id="main2" sourceRef="reg_elav_propuesta" targetRef="enviar"></sequenceFlow>
-    <sequenceFlow id="Flow_0upbxn5" sourceRef="revisar_propuesta" targetRef="enviar"></sequenceFlow>
-    <sequenceFlow id="OtroRecord" name="No" sourceRef="2_recordatorios" targetRef="Recordatorio">
+    <sequenceFlow id="wait0" sourceRef="Esperar" targetRef="msg_aceptar_propuesta"></sequenceFlow>
+    <sequenceFlow id="wait1" sourceRef="Esperar" targetRef="msg_rechazo"></sequenceFlow>
+    <sequenceFlow id="CerrarSolicitud" sourceRef="archivar_solicitud" targetRef="solicitud_cerrada"></sequenceFlow>
+    <sequenceFlow id="main2" sourceRef="reg_elav_propuesta" targetRef="enviar_propuesta"></sequenceFlow>
+    <sequenceFlow id="Flow_0upbxn5" sourceRef="revisar_propuesta" targetRef="enviar_propuesta"></sequenceFlow>
+    <sequenceFlow id="OtroRecord" name="No" sourceRef="2_recordatorios" targetRef="envio_recordatorio">
       <conditionExpression xsi:type="tFormalExpression"><![CDATA[${recordatorios < 2}]]></conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="SinRespuesta" name="Sí" sourceRef="2_recordatorios" targetRef="archivar_solicitud">
@@ -406,19 +405,18 @@ Recursos" flowable:candidateGroups="administracion" flowable:formKey="cursos-rec
       </extensionElements>
       <conditionExpression xsi:type="tFormalExpression"><![CDATA[${recordatorios >= 2}]]></conditionExpression>
     </sequenceFlow>
-    <sequenceFlow id="Rechazado" sourceRef="rechazo" targetRef="archivar_solicitud"></sequenceFlow>
+    <sequenceFlow id="Rechazado" sourceRef="msg_rechazo" targetRef="archivar_solicitud"></sequenceFlow>
     <sequenceFlow id="ModificarProp" sourceRef="modificaciones" targetRef="reg_observaciones"></sequenceFlow>
     <sequenceFlow id="InformeArchivar" sourceRef="envio_Informe" targetRef="liberar_recursos"></sequenceFlow>
-    <sequenceFlow id="Flow_0g8vm9l" sourceRef="Inicio" targetRef="evaluar_viabilidad"></sequenceFlow>
     <sequenceFlow id="Flow_0kbnm1d" sourceRef="evaluar_viabilidad" targetRef="es_viable"></sequenceFlow>
     <sequenceFlow id="Flow_0k38d9g" name="si" sourceRef="es_viable" targetRef="reg_elav_propuesta">
       <conditionExpression xsi:type="tFormalExpression"><![CDATA[${viable == true}]]></conditionExpression>
     </sequenceFlow>
-    <sequenceFlow id="Flow_0w8xn3l" name="no" sourceRef="es_viable" targetRef="Activity_0iibzwu"></sequenceFlow>
-    <sequenceFlow id="Flow_00ve97r" sourceRef="Activity_0iibzwu" targetRef="Event_18edb9q"></sequenceFlow>
+    <sequenceFlow id="Flow_0w8xn3l" name="no" sourceRef="es_viable" targetRef="notificar_inviabilidad"></sequenceFlow>
+    <sequenceFlow id="Flow_00ve97r" sourceRef="notificar_inviabilidad" targetRef="fin_inviable"></sequenceFlow>
     <sequenceFlow id="Flow_1topamj" sourceRef="envio_confirmacion_curso" targetRef="definir_docente_resp"></sequenceFlow>
-    <sequenceFlow id="Flow_05hw5hu" sourceRef="aceptar_propuesta" targetRef="Activity_1eg7zcl"></sequenceFlow>
-    <sequenceFlow id="Flow_1ffpwga" sourceRef="Activity_1eg7zcl" targetRef="Preparar">
+    <sequenceFlow id="Flow_05hw5hu" sourceRef="msg_aceptar_propuesta" targetRef="habilita_proceso_empresa"></sequenceFlow>
+    <sequenceFlow id="Flow_1ffpwga" sourceRef="habilita_proceso_empresa" targetRef="preparar_curso">
       <extensionElements>
         <flowable:executionListener event="take" class="proyecto.cursos.EstadoCurso"></flowable:executionListener>
       </extensionElements>
@@ -426,13 +424,15 @@ Recursos" flowable:candidateGroups="administracion" flowable:formKey="cursos-rec
     <sequenceFlow id="ObservacionesRevision" sourceRef="reg_observaciones" targetRef="revisar_propuesta"></sequenceFlow>
     <sequenceFlow id="RecursosLiberados" sourceRef="liberar_recursos" targetRef="fin_exitoso"></sequenceFlow>
     <sequenceFlow id="Flow_175t1j3" sourceRef="notificar_cierre" targetRef="fin_por_cancelacion"></sequenceFlow>
-    <sequenceFlow id="Preparado" sourceRef="Preparar" targetRef="cacela_preparacion"></sequenceFlow>
+    <sequenceFlow id="Preparado" sourceRef="preparar_curso" targetRef="cacela_preparacion"></sequenceFlow>
     <sequenceFlow id="PreparacionNotificar" name="si" sourceRef="cacela_preparacion" targetRef="notificar_cierre">
       <conditionExpression xsi:type="tFormalExpression"><![CDATA[${preparacionCancelada == true}]]></conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="sid-30DDC413-C515-42E5-9E0F-10BB41FF9A7F" name="no
 " sourceRef="cacela_preparacion" targetRef="envio_confirmacion_curso"></sequenceFlow>
     <sequenceFlow id="PlazoLimite" sourceRef="plazo_5dias" targetRef="2_recordatorios"></sequenceFlow>
+    <sequenceFlow id="Flow_0g8vm9l" sourceRef="Inicio" targetRef="evaluar_viabilidad"></sequenceFlow>
+    <sequenceFlow id="wait2" sourceRef="Esperar" targetRef="modificaciones"></sequenceFlow>
   </process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_Collaboration">
     <bpmndi:BPMNPlane bpmnElement="Collaboration" id="BPMNPlane_Collaboration">
@@ -463,13 +463,13 @@ Recursos" flowable:candidateGroups="administracion" flowable:formKey="cursos-rec
       <bpmndi:BPMNShape bpmnElement="Inicio" id="BPMNShape_Inicio">
         <omgdc:Bounds height="30.0" width="30.5" x="239.99999642372137" y="329.99999508261686"></omgdc:Bounds>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape bpmnElement="Recordatorio" id="BPMNShape_Recordatorio">
+      <bpmndi:BPMNShape bpmnElement="envio_recordatorio" id="BPMNShape_envio_recordatorio">
         <omgdc:Bounds height="80.0" width="100.0" x="1540.0" y="330.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="2_recordatorios" id="BPMNShape_2_recordatorios">
         <omgdc:Bounds height="40.0" width="40.0" x="1335.0" y="345.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape bpmnElement="aceptar_propuesta" id="BPMNShape_aceptar_propuesta">
+      <bpmndi:BPMNShape bpmnElement="msg_aceptar_propuesta" id="BPMNShape_msg_aceptar_propuesta">
         <omgdc:Bounds height="30.0" width="30.0" x="1197.0" y="572.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="modificaciones" id="BPMNShape_modificaciones">
@@ -481,10 +481,10 @@ Recursos" flowable:candidateGroups="administracion" flowable:formKey="cursos-rec
       <bpmndi:BPMNShape bpmnElement="fin_por_cancelacion" id="BPMNShape_fin_por_cancelacion">
         <omgdc:Bounds height="28.0" width="28.0" x="742.0" y="1712.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape bpmnElement="FinSinCurso" id="BPMNShape_FinSinCurso">
+      <bpmndi:BPMNShape bpmnElement="solicitud_cerrada" id="BPMNShape_solicitud_cerrada">
         <omgdc:Bounds height="28.0" width="28.0" x="1552.0" y="472.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape bpmnElement="Preparar" id="BPMNShape_Preparar">
+      <bpmndi:BPMNShape bpmnElement="preparar_curso" id="BPMNShape_preparar_curso">
         <omgdc:Bounds height="890.0" width="1260.0" x="350.0" y="700.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="inicio_preparar_curso" id="BPMNShape_inicio_preparar_curso">
@@ -493,13 +493,13 @@ Recursos" flowable:candidateGroups="administracion" flowable:formKey="cursos-rec
       <bpmndi:BPMNShape bpmnElement="preparacion_paralelo" id="BPMNShape_preparacion_paralelo">
         <omgdc:Bounds height="40.0" width="40.0" x="455.0" y="975.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape bpmnElement="nomina" id="BPMNShape_nomina">
+      <bpmndi:BPMNShape bpmnElement="recibe_nomina" id="BPMNShape_recibe_nomina">
         <omgdc:Bounds height="30.0" width="30.0" x="602.0" y="752.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="confeccion_lista" id="BPMNShape_confeccion_lista">
         <omgdc:Bounds height="80.0" width="140.0" x="1020.0" y="730.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape bpmnElement="Material" id="BPMNShape_Material">
+      <bpmndi:BPMNShape bpmnElement="Materiales" id="BPMNShape_Materiales">
         <omgdc:Bounds height="80.0" width="140.0" x="550.0" y="960.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="OrInicio" id="BPMNShape_OrInicio">
@@ -577,10 +577,10 @@ Recursos" flowable:candidateGroups="administracion" flowable:formKey="cursos-rec
       <bpmndi:BPMNShape bpmnElement="evaluar_viabilidad" id="BPMNShape_evaluar_viabilidad">
         <omgdc:Bounds height="80.0" width="100.0" x="210.0" y="450.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape bpmnElement="Event_18edb9q" id="BPMNShape_Event_18edb9q">
+      <bpmndi:BPMNShape bpmnElement="fin_inviable" id="BPMNShape_fin_inviable">
         <omgdc:Bounds height="28.0" width="28.0" x="522.0" y="582.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape bpmnElement="Activity_0iibzwu" id="BPMNShape_Activity_0iibzwu">
+      <bpmndi:BPMNShape bpmnElement="notificar_inviabilidad" id="BPMNShape_notificar_inviabilidad">
         <omgdc:Bounds height="80.0" width="100.0" x="370.0" y="560.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="envio_confirmacion_curso" id="BPMNShape_envio_confirmacion_curso">
@@ -592,10 +592,10 @@ Recursos" flowable:candidateGroups="administracion" flowable:formKey="cursos-rec
       <bpmndi:BPMNShape bpmnElement="envio_Informe" id="BPMNShape_envio_Informe">
         <omgdc:Bounds height="80.0" width="100.0" x="1395.0" y="1690.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape bpmnElement="Activity_1eg7zcl" id="BPMNShape_Activity_1eg7zcl">
+      <bpmndi:BPMNShape bpmnElement="habilita_proceso_empresa" id="BPMNShape_habilita_proceso_empresa">
         <omgdc:Bounds height="80.0" width="100.0" x="1400.0" y="550.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape bpmnElement="enviar" id="BPMNShape_enviar">
+      <bpmndi:BPMNShape bpmnElement="enviar_propuesta" id="BPMNShape_enviar_propuesta">
         <omgdc:Bounds height="80.0" width="100.0" x="665.0" y="310.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="reg_observaciones" id="BPMNShape_reg_observaciones">
@@ -610,7 +610,7 @@ Recursos" flowable:candidateGroups="administracion" flowable:formKey="cursos-rec
       <bpmndi:BPMNShape bpmnElement="plazo_5dias" id="BPMNShape_plazo_5dias">
         <omgdc:Bounds height="31.0" width="31.0" x="1197.0" y="352.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape bpmnElement="rechazo" id="BPMNShape_rechazo">
+      <bpmndi:BPMNShape bpmnElement="msg_rechazo" id="BPMNShape_msg_rechazo">
         <omgdc:Bounds height="30.0" width="30.0" x="1197.0" y="472.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="revisar_propuesta" id="BPMNShape_revisar_propuesta">
