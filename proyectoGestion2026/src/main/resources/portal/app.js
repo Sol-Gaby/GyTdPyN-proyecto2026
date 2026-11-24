@@ -92,6 +92,9 @@ async function cargar() {
                 bloque.append(lista);
             }
         } else {
+            if (fila.empresaNombre) {
+                bloque.append(nodo('p', 'Empresa: ' + fila.empresaNombre));
+            }
             bloque.append(nodo('p', 'Instancia ' + fila.processInstanceId));
             agregarAccionDeTarea(fila, bloque);
         }

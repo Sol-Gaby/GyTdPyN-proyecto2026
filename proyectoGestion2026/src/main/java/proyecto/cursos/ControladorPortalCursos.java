@@ -2,6 +2,7 @@ package proyecto.cursos;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
@@ -133,11 +134,40 @@ public class ControladorPortalCursos {
 
     @GetMapping("/api/tareas")
     public List<JsonNode> tareas(Principal usuario) {
+        var filas = tareasDisponibles(usuario);
+        for (int i = 0; i < filas.size(); i++) {
+            JsonNode tarea = filas.get(i);
+            String tipo = tarea.path("taskDefinitionKey").asText();
+            if ("Propuesta".equals(tipo) || "Revisar".equals(tipo)) {
+                filas.set(i, conNombreDeEmpresa(tarea));
+            }
+        }
+        return filas;
+    }
+
+    private JsonNode conNombreDeEmpresa(JsonNode tarea) {
+        String instancia = tarea.path("processInstanceId").asText();
+        if (instancia.isBlank()) return tarea;
+        try {
+            String empresa = motor.llamar("GET", "/runtime/process-instances/"
+                    + ClienteRestFlowable.codificar(instancia) + "/variables/empresaNombre", null)
+                    .path("value").asText("");
+            if (empresa.isBlank()) return tarea;
+            ObjectNode resumen = tarea.deepCopy();
+            resumen.put("empresaNombre", empresa);
+            return resumen;
+        } catch (ClienteRestFlowable.ErrorMotor error) {
+            if (error.estado() != 404) throw error;
+            return tarea;
+        }
+    }
+
+    private List<JsonNode> tareasDisponibles(Principal usuario) {
         String id = ClienteRestFlowable.codificar(usuario.getName());
         var disponibles = new LinkedHashMap<String, JsonNode>();
         List<JsonNode> filas = new ArrayList<>(motor.listar(CONSULTA_TAREAS + "assignee=" + id));
         if (seguridad.pertenece(usuario.getName(), TareasCurso.ADMINISTRACION)) {
-            motor.listar(CONSULTA_TAREAS + "candidateGroup=administracion").stream()
+            motor.listar(CONSULTA_TAREAS + "candidateGroup=" + ClienteRestFlowable.codificar(TareasCurso.ADMINISTRACION)).stream()
                     .filter(t -> t.path("assignee").isNull() || t.path("assignee").isMissingNode())
                     .forEach(filas::add);
         }
@@ -242,7 +272,7 @@ public class ControladorPortalCursos {
     }
 
     private JsonNode tareaDisponible(String id, Principal usuario) {
-        return tareas(usuario).stream().filter(t -> id.equals(t.path("id").asText())).findFirst()
+        return tareasDisponibles(usuario).stream().filter(t -> id.equals(t.path("id").asText())).findFirst()
                 .orElseThrow(ControladorPortalCursos::prohibido);
     }
 

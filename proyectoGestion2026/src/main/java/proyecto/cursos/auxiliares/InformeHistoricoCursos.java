@@ -78,7 +78,8 @@ public final class InformeHistoricoCursos {
         for (var proceso : procesos) {
             if (proceso.getEndTime() != null && proceso.getDeleteReason() == null) {
                 informe.terminadas++;
-                String resultado = String.valueOf(proceso.getProcessVariables().get("resultado"));
+                var variables = proceso.getProcessVariables();
+                String resultado = String.valueOf(variables.getOrDefault("estadoFinal", variables.get("resultado")));
                 String categoria = informe.resultados.containsKey(resultado) ? resultado : "SIN_CLASIFICAR";
                 informe.resultados.merge(categoria, 1L, Long::sum);
             }
