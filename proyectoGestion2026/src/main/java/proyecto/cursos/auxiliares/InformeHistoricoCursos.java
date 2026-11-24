@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 
 import org.flowable.engine.ProcessEngine;
 import org.flowable.engine.history.HistoricActivityInstance;
+import proyecto.cursos.IdentificadoresCurso;
 
 /** Consultas 4.3 sobre todas las versiones de Process_Curso. */
 public final class InformeHistoricoCursos {
@@ -34,9 +35,9 @@ public final class InformeHistoricoCursos {
 
         void medirPreparacion(List<HistoricActivityInstance> actividades) {
             if (actividades.stream().noneMatch(a -> "SubFin".equals(a.getActivityId()))) return;
-            Long inscripcion = intervalo(actividades, "Nomina", "Lista");
-            Long material = intervalo(actividades, "Material", "Material");
-            Long recurso = intervalo(actividades, "Activity_12i2hpf", "OrFin");
+            Long inscripcion = intervalo(actividades, "recibe_nomina", "confeccion_lista");
+            Long material = intervalo(actividades, "Materiales", "Materiales");
+            Long recurso = intervalo(actividades, "evaluar_recursos", "OrFin");
             if (inscripcion == null || material == null || recurso == null) return;
             preparaciones++;
             inscripciones += inscripcion;
@@ -93,9 +94,9 @@ public final class InformeHistoricoCursos {
     }
 
     private static Long intervalo(List<HistoricActivityInstance> actividades, String inicio, String fin) {
-        var desde = actividades.stream().filter(a -> inicio.equals(a.getActivityId()))
+        var desde = actividades.stream().filter(a -> inicio.equals(IdentificadoresCurso.actual(a.getActivityId())))
                 .map(HistoricActivityInstance::getStartTime).filter(Objects::nonNull).mapToLong(Date::getTime).min();
-        var hasta = actividades.stream().filter(a -> fin.equals(a.getActivityId()))
+        var hasta = actividades.stream().filter(a -> fin.equals(IdentificadoresCurso.actual(a.getActivityId())))
                 .map(HistoricActivityInstance::getEndTime).filter(Objects::nonNull).mapToLong(Date::getTime).max();
         return desde.isPresent() && hasta.isPresent() ? Math.max(0, hasta.getAsLong() - desde.getAsLong()) : null;
     }

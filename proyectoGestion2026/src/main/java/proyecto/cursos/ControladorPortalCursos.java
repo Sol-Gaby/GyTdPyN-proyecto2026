@@ -136,29 +136,31 @@ public class ControladorPortalCursos {
     public List<JsonNode> tareas(Principal usuario) {
         var filas = tareasDisponibles(usuario);
         for (int i = 0; i < filas.size(); i++) {
-            JsonNode tarea = filas.get(i);
-            String tipo = tarea.path("taskDefinitionKey").asText();
-            if ("Propuesta".equals(tipo) || "Revisar".equals(tipo)) {
-                filas.set(i, conNombreDeEmpresa(tarea));
+            ObjectNode resumen = filas.get(i).deepCopy();
+            String tipo = claveActividad(resumen);
+            if ("reg_elav_propuesta".equals(tipo) || "revisar_propuesta".equals(tipo)) {
+                agregarNombreDeEmpresa(resumen);
             }
+            resumen.put("claveActividad", tipo);
+            filas.set(i, resumen);
         }
         return filas;
     }
 
-    private JsonNode conNombreDeEmpresa(JsonNode tarea) {
+    private static String claveActividad(JsonNode tarea) {
+        return IdentificadoresCurso.actual(tarea.path("taskDefinitionKey").asText());
+    }
+
+    private void agregarNombreDeEmpresa(ObjectNode tarea) {
         String instancia = tarea.path("processInstanceId").asText();
-        if (instancia.isBlank()) return tarea;
+        if (instancia.isBlank()) return;
         try {
             String empresa = motor.llamar("GET", "/runtime/process-instances/"
                     + ClienteRestFlowable.codificar(instancia) + "/variables/empresaNombre", null)
                     .path("value").asText("");
-            if (empresa.isBlank()) return tarea;
-            ObjectNode resumen = tarea.deepCopy();
-            resumen.put("empresaNombre", empresa);
-            return resumen;
+            if (!empresa.isBlank()) tarea.put("empresaNombre", empresa);
         } catch (ClienteRestFlowable.ErrorMotor error) {
             if (error.estado() != 404) throw error;
-            return tarea;
         }
     }
 
@@ -172,7 +174,7 @@ public class ControladorPortalCursos {
                     .forEach(filas::add);
         }
         for (var fila : filas) {
-            if (CamposPermitidosTarea.CAMPOS.containsKey(fila.path("taskDefinitionKey").asText())) {
+            if (CamposPermitidosTarea.CAMPOS.containsKey(claveActividad(fila))) {
                 disponibles.put(fila.path("id").asText(), fila);
             }
         }
@@ -183,18 +185,18 @@ public class ControladorPortalCursos {
     public Map<String, String> datos(@PathVariable("id") String id, Principal usuario) {
         var tarea = tareaDisponible(id, usuario);
         var campos = new LinkedHashMap<String, String>();
-        String claveTarea = tarea.path("taskDefinitionKey").asText();
+        String claveTarea = claveActividad(tarea);
         List<String> visibles;
         switch (claveTarea) {
-            case "Propuesta":
-            case "Revisar":
+            case "reg_elav_propuesta":
+            case "revisar_propuesta":
                 visibles = List.of("programa", "presupuesto", "fechasPosibles", "observaciones");
                 break;
-            case "Lista":
+            case "confeccion_lista":
                 visibles = List.of("nomina");
                 break;
             case "Informe":
-            case "EnviarInforme":
+            case "envio_Informe":
                 visibles = List.of("informeResultados");
                 break;
             default:
@@ -220,7 +222,7 @@ public class ControladorPortalCursos {
         String responsable = tarea.path("assignee").asText("");
         String tareaId = ClienteRestFlowable.codificar(id);
         String clave = claveSesion(auth);
-        String codigo = tarea.path("taskDefinitionKey").asText();
+        String codigo = claveActividad(tarea);
         if ("reclamar".equals(accion)) {
             if (!responsable.isEmpty() || !valores.isEmpty()) throw new IllegalArgumentException("La tarea ya está asignada");
             motor.tareaComo(usuario.getName(), clave, "PUT", "tasks/" + tareaId + "/action/claim", Map.of());
@@ -247,7 +249,7 @@ public class ControladorPortalCursos {
     }
 
     private String formularioParaCompletar(String usuario, String clave, String ruta, String codigo) {
-        boolean propuesta = "Propuesta".equals(codigo) || "Revisar".equals(codigo);
+        boolean propuesta = "reg_elav_propuesta".equals(codigo) || "revisar_propuesta".equals(codigo);
         try {
             String formulario = motor.tareaComo(usuario, clave, "GET", ruta, null).path("id").asText();
             if (!formulario.isBlank()) return formulario;
@@ -287,23 +289,23 @@ public class ControladorPortalCursos {
             var actividades = new LinkedHashSet<String>();
             var claves = new LinkedHashSet<String>();
             tareas.forEach(t -> {
-                String clave = t.path("taskDefinitionKey").asText();
-                actividades.add("VerificarCompensaciones".equals(clave)
+                String clave = claveActividad(t);
+                actividades.add("verificar_compensaciones".equals(clave)
                         ? "Verificar el cierre de la cancelación" : t.path("name").asText());
                 claves.add(clave);
             });
             ejecuciones.forEach(e -> {
-                String actividad = e.path("activityId").asText();
+                String actividad = IdentificadoresCurso.actual(e.path("activityId").asText());
                 claves.add(actividad);
-                if ("Nomina".equals(actividad)) actividades.add("Esperar la nómina de participantes");
+                if ("recibe_nomina".equals(actividad)) actividades.add("Esperar la nómina de participantes");
             });
             String estado = "EN_PREPARACION";
-            if (claves.contains("VerificarCompensaciones") || claves.contains("Activity_1m08pcl")
-                    || claves.contains("CompensarPreparacion")
+            if (claves.contains("verificar_compensaciones") || claves.contains("liberar_equipo")
+                    || claves.contains("liberar_recursos")
                     || claves.contains("ComprobarEquipoLiberado")) estado = "LIBERANDO_RECURSOS";
-            else if (claves.contains("Informe") || claves.contains("EnviarInforme")) estado = "EN_ELABORACION_DEL_INFORME";
-            else if (claves.contains("Dictar")) estado = "EN_DESARROLLO";
-            else if (claves.contains("Activity_1018bdz") || claves.contains("Fecha")) estado = "CONFIRMADO_PENDIENTE_INICIO";
+            else if (claves.contains("Informe") || claves.contains("envio_Informe")) estado = "EN_ELABORACION_DEL_INFORME";
+            else if (claves.contains("dictar_curso")) estado = "EN_DESARROLLO";
+            else if (claves.contains("definir_docente_resp") || claves.contains("fecha_programada")) estado = "CONFIRMADO_PENDIENTE_INICIO";
             curso.put("estado", estado);
             curso.put("actividades", actividades);
         }

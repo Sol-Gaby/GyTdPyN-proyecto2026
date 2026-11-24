@@ -3,12 +3,12 @@
   <collaboration id="Collaboration">
     <participant id="rechazo_propuesta" name="Institucion de Cursos" processRef="Process_Curso"></participant>
   </collaboration>
-  <message id="Msg_sol" name="Msg_sol"></message>
-  <message id="Msg_acepta" name="Msg_acepta"></message>
-  <message id="Msg_mod" name="Msg_mod"></message>
-  <message id="Msg_nom" name="Msg_nom"></message>
-  <message id="Msg_cancel" name="Msg_cancel"></message>
-  <message id="Msg_rechaza" name="Msg_rechaza"></message>
+  <message id="Msg_sol" name="Solicitud de curso"></message>
+  <message id="Msg_acepta" name="Aceptación"></message>
+  <message id="Msg_mod" name="Solicitud de modificaciones"></message>
+  <message id="Msg_nom" name="Nómina de participantes"></message>
+  <message id="Msg_cancel" name="Cancelación"></message>
+  <message id="Msg_rechaza" name="Rechazo"></message>
   <process id="Process_Curso" name="Institucion de Cursos" isExecutable="true">
     <extensionElements>
       <flowable:executionListener event="start" class="proyecto.cursos.EstadoCurso"></flowable:executionListener>
@@ -20,16 +20,12 @@
         <flowNodeRef>Informe</flowNodeRef>
         <flowNodeRef>dictar_curso</flowNodeRef>
         <flowNodeRef>definir_docente_resp</flowNodeRef>
-        <flowNodeRef>FechaDictar</flowNodeRef>
-        <flowNodeRef>Flow_1sdjeh6</flowNodeRef>
-        <flowNodeRef>InformeEnviar</flowNodeRef>
-        <flowNodeRef>Flow_0lscijk</flowNodeRef>
       </lane>
       <lane id="administracion" name="Administración">
         <flowNodeRef>Esperar</flowNodeRef>
         <flowNodeRef>Inicio</flowNodeRef>
         <flowNodeRef>envio_recordatorio</flowNodeRef>
-        <flowNodeRef>2_recordatorios</flowNodeRef>
+        <flowNodeRef>limite_recordatorios</flowNodeRef>
         <flowNodeRef>msg_aceptar_propuesta</flowNodeRef>
         <flowNodeRef>modificaciones</flowNodeRef>
         <flowNodeRef>notificar_cierre</flowNodeRef>
@@ -53,40 +49,12 @@
         <flowNodeRef>msg_rechazo</flowNodeRef>
         <flowNodeRef>revisar_propuesta</flowNodeRef>
         <flowNodeRef>archivar_solicitud</flowNodeRef>
-        <flowNodeRef>main3</flowNodeRef>
-        <flowNodeRef>VolverEsperar</flowNodeRef>
-        <flowNodeRef>wait3</flowNodeRef>
-        <flowNodeRef>wait0</flowNodeRef>
-        <flowNodeRef>wait1</flowNodeRef>
-        <flowNodeRef>CerrarSolicitud</flowNodeRef>
-        <flowNodeRef>main2</flowNodeRef>
-        <flowNodeRef>Flow_0upbxn5</flowNodeRef>
-        <flowNodeRef>OtroRecord</flowNodeRef>
-        <flowNodeRef>SinRespuesta</flowNodeRef>
-        <flowNodeRef>Rechazado</flowNodeRef>
-        <flowNodeRef>ModificarProp</flowNodeRef>
-        <flowNodeRef>InformeArchivar</flowNodeRef>
-        <flowNodeRef>Flow_0kbnm1d</flowNodeRef>
-        <flowNodeRef>Flow_0k38d9g</flowNodeRef>
-        <flowNodeRef>Flow_0w8xn3l</flowNodeRef>
-        <flowNodeRef>Flow_00ve97r</flowNodeRef>
-        <flowNodeRef>Flow_1topamj</flowNodeRef>
-        <flowNodeRef>Flow_05hw5hu</flowNodeRef>
-        <flowNodeRef>Flow_1ffpwga</flowNodeRef>
-        <flowNodeRef>ObservacionesRevision</flowNodeRef>
-        <flowNodeRef>RecursosLiberados</flowNodeRef>
-        <flowNodeRef>Flow_175t1j3</flowNodeRef>
-        <flowNodeRef>Preparado</flowNodeRef>
-        <flowNodeRef>PreparacionNotificar</flowNodeRef>
-        <flowNodeRef>sid-30DDC413-C515-42E5-9E0F-10BB41FF9A7F</flowNodeRef>
-        <flowNodeRef>PlazoLimite</flowNodeRef>
-        <flowNodeRef>Flow_0g8vm9l</flowNodeRef>
-        <flowNodeRef>wait2</flowNodeRef>
+        <flowNodeRef>contar_cursos</flowNodeRef>
       </lane>
     </laneSet>
     <intermediateCatchEvent id="fecha_programada" name="Fecha programada">
-      <timerEventDefinition>
-        <timeDate>${fechaCurso}</timeDate>
+      <timerEventDefinition id="Def_Fecha">
+        <timeDate xsi:type="tFormalExpression">${fechaCurso}</timeDate>
       </timerEventDefinition>
     </intermediateCatchEvent>
     <userTask id="Informe" name="Elaborar informe de resultados" flowable:assignee="jefeDocente" flowable:formKey="cursos-informe" flowable:formFieldValidation="true">
@@ -94,44 +62,33 @@
         <flowable:taskListener event="complete" class="proyecto.cursos.TareasCurso"></flowable:taskListener>
         <flowable:taskListener event="create" class="proyecto.cursos.TareasCurso"></flowable:taskListener>
         <flowable:taskListener event="assignment" class="proyecto.cursos.TareasCurso"></flowable:taskListener>
-        <modeler:activiti-idm-assignee xmlns:modeler="http://flowable.org/modeler"><![CDATA[true]]></modeler:activiti-idm-assignee>
-        <modeler:assignee-info-email xmlns:modeler="http://flowable.org/modeler"><![CDATA[jefeDocente@gimail.com]]></modeler:assignee-info-email>
-        <modeler:assignee-info-firstname xmlns:modeler="http://flowable.org/modeler"><![CDATA[Jefe]]></modeler:assignee-info-firstname>
-        <modeler:assignee-info-lastname xmlns:modeler="http://flowable.org/modeler"><![CDATA[de Docentes]]></modeler:assignee-info-lastname>
-        <modeler:initiator-can-complete xmlns:modeler="http://flowable.org/modeler"><![CDATA[false]]></modeler:initiator-can-complete>
       </extensionElements>
     </userTask>
-    <userTask id="dictar_curso" name="Desarrollar curso" flowable:candidateGroups="docentes" flowable:formFieldValidation="true">
+    <userTask id="dictar_curso" name="Desarrollar curso" flowable:formFieldValidation="true" flowable:assignee="${docenteAsignado}">
       <extensionElements>
         <flowable:taskListener event="complete" class="proyecto.cursos.TareasCurso"></flowable:taskListener>
         <flowable:taskListener event="create" class="proyecto.cursos.TareasCurso"></flowable:taskListener>
         <flowable:taskListener event="assignment" class="proyecto.cursos.TareasCurso"></flowable:taskListener>
-        <modeler:group-info-name-docentes xmlns:modeler="http://flowable.org/modeler"><![CDATA[Docentes]]></modeler:group-info-name-docentes>
-        <modeler:activiti-idm-candidate-group xmlns:modeler="http://flowable.org/modeler"><![CDATA[true]]></modeler:activiti-idm-candidate-group>
-        <modeler:initiator-can-complete xmlns:modeler="http://flowable.org/modeler"><![CDATA[false]]></modeler:initiator-can-complete>
       </extensionElements>
     </userTask>
     <userTask id="definir_docente_resp" name="Definir Docente que desarrolla el curso" flowable:assignee="jefeDocente" flowable:formKey="cursos-docente" flowable:formFieldValidation="true">
       <extensionElements>
-        <flowable:executionListener event="start" class="proyecto.cursos.TareasCurso"></flowable:executionListener>
-        <modeler:activiti-idm-assignee xmlns:modeler="http://flowable.org/modeler"><![CDATA[true]]></modeler:activiti-idm-assignee>
-        <modeler:assignee-info-email xmlns:modeler="http://flowable.org/modeler"><![CDATA[jefeDocente@gimail.com]]></modeler:assignee-info-email>
-        <modeler:assignee-info-firstname xmlns:modeler="http://flowable.org/modeler"><![CDATA[Jefe]]></modeler:assignee-info-firstname>
-        <modeler:assignee-info-lastname xmlns:modeler="http://flowable.org/modeler"><![CDATA[de Docentes]]></modeler:assignee-info-lastname>
-        <modeler:initiator-can-complete xmlns:modeler="http://flowable.org/modeler"><![CDATA[false]]></modeler:initiator-can-complete>
+        <flowable:taskListener event="complete" class="proyecto.cursos.TareasCurso"></flowable:taskListener>
+        <flowable:taskListener event="create" class="proyecto.cursos.TareasCurso"></flowable:taskListener>
+        <flowable:taskListener event="assignment" class="proyecto.cursos.TareasCurso"></flowable:taskListener>
       </extensionElements>
     </userTask>
     <eventBasedGateway id="Esperar" name="Esperar respuesta"></eventBasedGateway>
-    <startEvent id="Inicio" name="Solicitud recibida" isInterrupting="true">
-      <messageEventDefinition messageRef="Msg_sol"></messageEventDefinition>
+    <startEvent id="Inicio" name="Solicitud recibida">
+      <messageEventDefinition id="Def_Inicio" messageRef="Msg_sol"></messageEventDefinition>
     </startEvent>
     <serviceTask id="envio_recordatorio" name="Enviar recordatorio" flowable:class="proyecto.cursos.OperacionesCurso"></serviceTask>
-    <exclusiveGateway id="2_recordatorios" name="¿Se enviaron 2 recordatorios?"></exclusiveGateway>
+    <exclusiveGateway id="limite_recordatorios" name="¿Se enviaron 2 recordatorios?"></exclusiveGateway>
     <intermediateCatchEvent id="msg_aceptar_propuesta" name="Acepta Propuesta">
-      <messageEventDefinition messageRef="Msg_acepta"></messageEventDefinition>
+      <messageEventDefinition id="Def_Aceptar" messageRef="Msg_acepta"></messageEventDefinition>
     </intermediateCatchEvent>
     <intermediateCatchEvent id="modificaciones" name="Modificaciones">
-      <messageEventDefinition messageRef="Msg_mod"></messageEventDefinition>
+      <messageEventDefinition id="Def_Modificar" messageRef="Msg_mod"></messageEventDefinition>
     </intermediateCatchEvent>
     <serviceTask id="notificar_cierre" name="Notificar Cierre" flowable:class="proyecto.cursos.OperacionesCurso"></serviceTask>
     <endEvent id="fin_por_cancelacion"></endEvent>
@@ -140,74 +97,62 @@
       <extensionElements>
         <flowable:executionListener event="start" expression="${execution.setVariable('preparacionCancelada', false)}"></flowable:executionListener>
       </extensionElements>
-      <startEvent id="inicio_preparar_curso" flowable:formFieldValidation="true"></startEvent>
+      <startEvent id="inicio_preparar_curso" flowable:formFieldValidation="true" name=""></startEvent>
       <parallelGateway id="preparacion_paralelo" name="Preparación en paralelo"></parallelGateway>
       <intermediateCatchEvent id="recibe_nomina" name="Recibir nómina">
         <messageEventDefinition messageRef="Msg_nom"></messageEventDefinition>
       </intermediateCatchEvent>
-      <userTask id="confeccion_lista" name="Confeccionar lista definitiva" flowable:candidateGroups="administracion" flowable:formFieldValidation="true">
+      <userTask id="confeccion_lista" name="Confeccionar lista definitiva" flowable:formFieldValidation="true">
         <extensionElements>
           <flowable:taskListener event="create" class="proyecto.cursos.TareasCurso"></flowable:taskListener>
           <flowable:taskListener event="complete" class="proyecto.cursos.TareasCurso"></flowable:taskListener>
           <flowable:taskListener event="assignment" class="proyecto.cursos.TareasCurso"></flowable:taskListener>
-          <modeler:group-info-name-administracion xmlns:modeler="http://flowable.org/modeler"><![CDATA[Administración]]></modeler:group-info-name-administracion>
-          <modeler:activiti-idm-candidate-group xmlns:modeler="http://flowable.org/modeler"><![CDATA[true]]></modeler:activiti-idm-candidate-group>
-          <modeler:initiator-can-complete xmlns:modeler="http://flowable.org/modeler"><![CDATA[false]]></modeler:initiator-can-complete>
         </extensionElements>
       </userTask>
-      <userTask id="Materiales" name="Preparar materiales" flowable:candidateGroups="administracion" flowable:formFieldValidation="true">
+      <userTask id="Materiales" name="Preparar materiales" flowable:candidateGroups="gestion_academica" flowable:formFieldValidation="true">
         <extensionElements>
           <flowable:taskListener event="complete" class="proyecto.cursos.TareasCurso"></flowable:taskListener>
           <flowable:taskListener event="create" class="proyecto.cursos.TareasCurso"></flowable:taskListener>
           <flowable:taskListener event="assignment" class="proyecto.cursos.TareasCurso"></flowable:taskListener>
-          <modeler:group-info-name-administracion xmlns:modeler="http://flowable.org/modeler"><![CDATA[Administración]]></modeler:group-info-name-administracion>
-          <modeler:activiti-idm-candidate-group xmlns:modeler="http://flowable.org/modeler"><![CDATA[true]]></modeler:activiti-idm-candidate-group>
-          <modeler:initiator-can-complete xmlns:modeler="http://flowable.org/modeler"><![CDATA[false]]></modeler:initiator-can-complete>
         </extensionElements>
       </userTask>
       <inclusiveGateway id="OrInicio" name="Recursos necesarios"></inclusiveGateway>
-      <userTask id="Virtual" name="Solicitar Aula Virtual" flowable:assignee="Candidate groups" flowable:candidateGroups="gestion_academica" flowable:formFieldValidation="true">
+      <userTask id="Virtual" name="Solicitar Aula Virtual" flowable:candidateGroups="gestion_academica" flowable:formFieldValidation="true">
         <extensionElements>
           <flowable:taskListener event="complete" class="proyecto.cursos.TareasCurso"></flowable:taskListener>
           <flowable:taskListener event="create" class="proyecto.cursos.TareasCurso"></flowable:taskListener>
           <flowable:taskListener event="assignment" class="proyecto.cursos.TareasCurso"></flowable:taskListener>
-          <modeler:initiator-can-complete xmlns:modeler="http://flowable.org/modeler"><![CDATA[false]]></modeler:initiator-can-complete>
         </extensionElements>
       </userTask>
-      <userTask id="contrato_equipo" name="Contratar equipamiento" flowable:assignee="Candidate groups" flowable:candidateGroups="gestion_academica" flowable:formFieldValidation="true">
+      <userTask id="contrato_equipo" name="Contratar equipamiento" flowable:candidateGroups="gestion_academica" flowable:formFieldValidation="true">
         <extensionElements>
           <flowable:taskListener event="complete" class="proyecto.cursos.TareasCurso"></flowable:taskListener>
           <flowable:taskListener event="create" class="proyecto.cursos.TareasCurso"></flowable:taskListener>
           <flowable:taskListener event="assignment" class="proyecto.cursos.TareasCurso"></flowable:taskListener>
-          <modeler:initiator-can-complete xmlns:modeler="http://flowable.org/modeler"><![CDATA[false]]></modeler:initiator-can-complete>
         </extensionElements>
       </userTask>
       <inclusiveGateway id="OrFin" name="Todos los recursos seleccionados listos"></inclusiveGateway>
       <parallelGateway id="ParFin" name="Preparación completa"></parallelGateway>
-      <endEvent id="SubFin"></endEvent>
-      <userTask id="evaluar_recursos" name="Evaluar
-Recursos" flowable:candidateGroups="administracion" flowable:formKey="cursos-recursos" flowable:formFieldValidation="true">
+      <endEvent id="SubFin" name=""></endEvent>
+      <userTask id="evaluar_recursos" name="Evaluar Recursos" flowable:candidateGroups="gestion_academica" flowable:formKey="cursos-recursos" flowable:formFieldValidation="true">
         <extensionElements>
           <flowable:taskListener event="complete" class="proyecto.cursos.TareasCurso"></flowable:taskListener>
           <flowable:taskListener event="create" class="proyecto.cursos.TareasCurso"></flowable:taskListener>
           <flowable:taskListener event="assignment" class="proyecto.cursos.TareasCurso"></flowable:taskListener>
-          <modeler:group-info-name-administracion xmlns:modeler="http://flowable.org/modeler"><![CDATA[Administración]]></modeler:group-info-name-administracion>
-          <modeler:activiti-idm-candidate-group xmlns:modeler="http://flowable.org/modeler"><![CDATA[true]]></modeler:activiti-idm-candidate-group>
-          <modeler:initiator-can-complete xmlns:modeler="http://flowable.org/modeler"><![CDATA[false]]></modeler:initiator-can-complete>
         </extensionElements>
       </userTask>
       <subProcess id="cancelacion_cursos" name="Cancelación" triggeredByEvent="true">
         <startEvent id="resp_cancelación" name="Recibir Cancelación" isInterrupting="true">
-          <messageEventDefinition messageRef="Msg_cancel"></messageEventDefinition>
+          <messageEventDefinition id="MessageEventDefinition_1avzsle" messageRef="Msg_cancel"></messageEventDefinition>
         </startEvent>
         <intermediateThrowEvent id="compensar_aula" name="Compensar aula">
-          <compensateEventDefinition activityRef="Aula"></compensateEventDefinition>
+          <compensateEventDefinition id="CompensateEventDefinition_0vae6de" activityRef="Aula"></compensateEventDefinition>
         </intermediateThrowEvent>
         <intermediateThrowEvent id="compensar_aulavirtual" name="Compensar aula virtual">
           <compensateEventDefinition activityRef="Virtual"></compensateEventDefinition>
         </intermediateThrowEvent>
         <intermediateThrowEvent id="compensar_equipo" name="Compensar equipamiento">
-          <compensateEventDefinition activityRef="Equipo"></compensateEventDefinition>
+          <compensateEventDefinition activityRef="contrato_equipo"></compensateEventDefinition>
         </intermediateThrowEvent>
         <endEvent id="Event_0snigbc" name="Cancelación verificada"></endEvent>
         <userTask id="verificar_compensaciones" name="Verificar compensaciones" flowable:assignee="jefeAdmin" flowable:formFieldValidation="true">
@@ -215,7 +160,6 @@ Recursos" flowable:candidateGroups="administracion" flowable:formKey="cursos-rec
             <flowable:taskListener event="create" class="proyecto.cursos.TareasCurso"></flowable:taskListener>
             <flowable:taskListener event="assignment" class="proyecto.cursos.TareasCurso"></flowable:taskListener>
             <flowable:taskListener event="complete" class="proyecto.cursos.TareasCurso"></flowable:taskListener>
-            <modeler:initiator-can-complete xmlns:modeler="http://flowable.org/modeler"><![CDATA[false]]></modeler:initiator-can-complete>
           </extensionElements>
         </userTask>
         <sequenceFlow id="Flow_099pqle" sourceRef="resp_cancelación" targetRef="compensar_aula"></sequenceFlow>
@@ -229,17 +173,16 @@ Recursos" flowable:candidateGroups="administracion" flowable:formKey="cursos-rec
         </sequenceFlow>
       </subProcess>
       <boundaryEvent id="Event_1gsyqer" attachedToRef="Virtual" cancelActivity="false">
-        <compensateEventDefinition></compensateEventDefinition>
+        <compensateEventDefinition id="CompensateEventDefinition_1n13dna"></compensateEventDefinition>
       </boundaryEvent>
       <boundaryEvent id="Event_1ypcc1j" attachedToRef="contrato_equipo" cancelActivity="false">
-        <compensateEventDefinition></compensateEventDefinition>
+        <compensateEventDefinition id="CompensateEventDefinition_1weqaul"></compensateEventDefinition>
       </boundaryEvent>
-      <userTask id="liberar_equipo" name="Liberar Equipamiento" isForCompensation="true" flowable:assignee="Candidate groups" flowable:candidateGroups="gestion_academica" flowable:formFieldValidation="true">
+      <userTask id="liberar_equipo" name="Liberar Equipamiento" isForCompensation="true" flowable:candidateGroups="gestion_academica" flowable:formFieldValidation="true">
         <extensionElements>
           <flowable:taskListener event="complete" class="proyecto.cursos.TareasCurso"></flowable:taskListener>
           <flowable:taskListener event="create" class="proyecto.cursos.TareasCurso"></flowable:taskListener>
           <flowable:taskListener event="assignment" class="proyecto.cursos.TareasCurso"></flowable:taskListener>
-          <modeler:initiator-can-complete xmlns:modeler="http://flowable.org/modeler"><![CDATA[false]]></modeler:initiator-can-complete>
         </extensionElements>
       </userTask>
       <serviceTask id="Aula" name="Reservar aula" flowable:class="proyecto.cursos.OperacionesCurso"></serviceTask>
@@ -247,22 +190,22 @@ Recursos" flowable:candidateGroups="administracion" flowable:formKey="cursos-rec
       <serviceTask id="Activity_02hrooc" name="Liberar Aula Virtual" isForCompensation="true" flowable:class="proyecto.cursos.OperacionesCurso"></serviceTask>
       <serviceTask id="validar_nomina" name="Registrar nómina" flowable:class="proyecto.cursos.OperacionesCurso"></serviceTask>
       <boundaryEvent id="Event_0rm0c02" attachedToRef="Aula" cancelActivity="false">
-        <compensateEventDefinition></compensateEventDefinition>
+        <compensateEventDefinition id="CompensateEventDefinition_10syb4w"></compensateEventDefinition>
       </boundaryEvent>
       <sequenceFlow id="s1" sourceRef="inicio_preparar_curso" targetRef="preparacion_paralelo"></sequenceFlow>
       <sequenceFlow id="s2" sourceRef="preparacion_paralelo" targetRef="recibe_nomina"></sequenceFlow>
       <sequenceFlow id="s5" sourceRef="preparacion_paralelo" targetRef="Materiales"></sequenceFlow>
       <sequenceFlow id="s6" sourceRef="preparacion_paralelo" targetRef="evaluar_recursos"></sequenceFlow>
       <sequenceFlow id="or0" name="Presencial" sourceRef="OrInicio" targetRef="Aula">
-        <conditionExpression xsi:type="tFormalExpression"><![CDATA[${requiereAula}]]></conditionExpression>
+        <conditionExpression xsi:type="tFormalExpression">${requiereAula}</conditionExpression>
       </sequenceFlow>
       <sequenceFlow id="oj0" sourceRef="Aula" targetRef="OrFin"></sequenceFlow>
       <sequenceFlow id="or1" name="Virtual" sourceRef="OrInicio" targetRef="Virtual">
-        <conditionExpression xsi:type="tFormalExpression"><![CDATA[${requierePlataforma}]]></conditionExpression>
+        <conditionExpression xsi:type="tFormalExpression">${requierePlataforma}</conditionExpression>
       </sequenceFlow>
       <sequenceFlow id="oj1" sourceRef="Virtual" targetRef="OrFin"></sequenceFlow>
       <sequenceFlow id="or2" name="Equipamiento especial" sourceRef="OrInicio" targetRef="contrato_equipo">
-        <conditionExpression xsi:type="tFormalExpression"><![CDATA[${requiereEquipamiento}]]></conditionExpression>
+        <conditionExpression xsi:type="tFormalExpression">${requiereEquipamiento}</conditionExpression>
       </sequenceFlow>
       <sequenceFlow id="oj2" sourceRef="contrato_equipo" targetRef="OrFin"></sequenceFlow>
       <sequenceFlow id="s11" sourceRef="OrFin" targetRef="ParFin"></sequenceFlow>
@@ -272,38 +215,21 @@ Recursos" flowable:candidateGroups="administracion" flowable:formKey="cursos-rec
       <sequenceFlow id="Flow_1q09oq9" sourceRef="confeccion_lista" targetRef="ParFin"></sequenceFlow>
       <sequenceFlow id="Flow_1j917g3" sourceRef="recibe_nomina" targetRef="validar_nomina"></sequenceFlow>
       <sequenceFlow id="NominaLista" sourceRef="validar_nomina" targetRef="confeccion_lista"></sequenceFlow>
-      <sequenceFlow id="Association_0oqohax" sourceRef="Event_1ypcc1j" targetRef="liberar_equipo"></sequenceFlow>
-      <sequenceFlow id="Association_0f6fnvw" sourceRef="Event_1gsyqer" targetRef="Activity_02hrooc"></sequenceFlow>
-      <sequenceFlow id="Association_1fh67xn" sourceRef="Event_0rm0c02" targetRef="Activity_16zz91p"></sequenceFlow>
+      <association id="Association_0oqohax" sourceRef="Event_1ypcc1j" targetRef="liberar_equipo" associationDirection="One"></association>
+      <association id="Association_0f6fnvw" sourceRef="Event_1gsyqer" targetRef="Activity_02hrooc" associationDirection="One"></association>
+      <association id="Association_1fh67xn" sourceRef="Event_0rm0c02" targetRef="Activity_16zz91p" associationDirection="One"></association>
     </subProcess>
     <userTask id="reg_elav_propuesta" name="Registrar y Elaborar Propuesta" flowable:assignee="jefeAdmin" flowable:formKey="cursos-propuesta" flowable:formFieldValidation="true">
       <extensionElements>
         <flowable:taskListener event="complete" class="proyecto.cursos.TareasCurso"></flowable:taskListener>
         <flowable:taskListener event="create" class="proyecto.cursos.TareasCurso"></flowable:taskListener>
         <flowable:taskListener event="assignment" class="proyecto.cursos.TareasCurso"></flowable:taskListener>
-        <modeler:activiti-idm-assignee xmlns:modeler="http://flowable.org/modeler"><![CDATA[true]]></modeler:activiti-idm-assignee>
-        <modeler:assignee-info-email xmlns:modeler="http://flowable.org/modeler"><![CDATA[jefeAdministracion@gimal.com]]></modeler:assignee-info-email>
-        <modeler:assignee-info-firstname xmlns:modeler="http://flowable.org/modeler"><![CDATA[Jefe]]></modeler:assignee-info-firstname>
-        <modeler:assignee-info-lastname xmlns:modeler="http://flowable.org/modeler"><![CDATA[Administración]]></modeler:assignee-info-lastname>
-        <modeler:initiator-can-complete xmlns:modeler="http://flowable.org/modeler"><![CDATA[false]]></modeler:initiator-can-complete>
       </extensionElements>
     </userTask>
     <exclusiveGateway id="es_viable" name="Es viable?" default="Flow_0w8xn3l"></exclusiveGateway>
     <serviceTask id="evaluar_viabilidad" name="Evaluar Viabilidad" flowable:type="dmn">
       <extensionElements>
-        <flowable:field name="decisionTableReferenceKey">
-          <flowable:string><![CDATA[viabilidadCurso]]></flowable:string>
-        </flowable:field>
-        <flowable:field name="decisionTaskThrowErrorOnNoHits">
-          <flowable:string><![CDATA[false]]></flowable:string>
-        </flowable:field>
-        <flowable:field name="fallbackToDefaultTenant">
-          <flowable:string><![CDATA[false]]></flowable:string>
-        </flowable:field>
-        <flowable:field name="sameDeployment">
-          <flowable:string><![CDATA[false]]></flowable:string>
-        </flowable:field>
-        <flowable:decisionReferenceType xmlns:flowable="http://flowable.org/bpmn"><![CDATA[decisionService]]></flowable:decisionReferenceType>
+        <flowable:field name="decisionTableReferenceKey" stringValue="viabilidadCurso"></flowable:field>
       </extensionElements>
     </serviceTask>
     <endEvent id="fin_inviable"></endEvent>
@@ -311,49 +237,40 @@ Recursos" flowable:candidateGroups="administracion" flowable:formKey="cursos-rec
     <serviceTask id="envio_confirmacion_curso" name="Enviar confirmación" flowable:class="proyecto.cursos.OperacionesCurso"></serviceTask>
     <endEvent id="fin_exitoso" name="Curso finalizado">
       <extensionElements>
-        <flowable:executionListener event="end" expression="${execution.setVariable('resultado', 'FINALIZADO')}"></flowable:executionListener>
+        <flowable:executionListener event="start" expression="${execution.setVariable('estadoFinal', 'FINALIZADO')}"></flowable:executionListener>
       </extensionElements>
     </endEvent>
-    <userTask id="envio_Informe" name="Enviar informe a empresa y Archivar expediente." flowable:assignee="jefeAdmin" flowable:candidateUsers="jefeAdmin" flowable:formFieldValidation="true">
+    <userTask id="envio_Informe" name="Enviar informe a empresa y Archivar expediente." flowable:assignee="jefeAdmin" flowable:formFieldValidation="true">
       <extensionElements>
         <flowable:taskListener event="complete" class="proyecto.cursos.TareasCurso"></flowable:taskListener>
         <flowable:taskListener event="create" class="proyecto.cursos.TareasCurso"></flowable:taskListener>
         <flowable:taskListener event="assignment" class="proyecto.cursos.TareasCurso"></flowable:taskListener>
-        <modeler:initiator-can-complete xmlns:modeler="http://flowable.org/modeler"><![CDATA[false]]></modeler:initiator-can-complete>
       </extensionElements>
     </userTask>
     <serviceTask id="habilita_proceso_empresa" name="Habilitar acceso de la empresa" flowable:class="proyecto.cursos.OperacionesCurso"></serviceTask>
     <serviceTask id="enviar_propuesta" name="Enviar propuesta" flowable:class="proyecto.cursos.OperacionesCurso"></serviceTask>
     <serviceTask id="reg_observaciones" name="Registrar observaciones" flowable:class="proyecto.cursos.OperacionesCurso">
-      <extensionElements>
-        <flowable:executionListener event="start" class="proyecto.cursos.ProyeccionInstitucional"></flowable:executionListener>
-      </extensionElements>
-    </serviceTask>
-    <exclusiveGateway id="cacela_preparacion" name="¿Se canceló la preparación?"></exclusiveGateway>
+      </serviceTask>
+    <exclusiveGateway id="cacela_preparacion" name="¿Se canceló la preparación?" default="sid-30DDC413-C515-42E5-9E0F-10BB41FF9A7F"></exclusiveGateway>
     <intermediateThrowEvent id="liberar_recursos" name="Liberar recursos">
-      <compensateEventDefinition activityRef="Preparar"></compensateEventDefinition>
+      <compensateEventDefinition activityRef="preparar_curso"></compensateEventDefinition>
     </intermediateThrowEvent>
     <intermediateCatchEvent id="plazo_5dias" name="5 días">
-      <timerEventDefinition>
-        <timeDuration>${plazoRespuesta}</timeDuration>
+      <timerEventDefinition id="Def_Plazo">
+        <timeDuration xsi:type="tFormalExpression">${plazoRespuesta}</timeDuration>
       </timerEventDefinition>
     </intermediateCatchEvent>
     <intermediateCatchEvent id="msg_rechazo" name="Rechazo">
       <extensionElements>
-        <flowable:executionListener event="take" class="proyecto.cursos.EstadoCurso"></flowable:executionListener>
+        <flowable:executionListener event="start" expression="${execution.setVariable('estadoFinal', 'RECHAZADO')}"></flowable:executionListener>
       </extensionElements>
-      <messageEventDefinition messageRef="Msg_rechaza"></messageEventDefinition>
+      <messageEventDefinition id="Def_Rechazar" messageRef="Msg_rechaza"></messageEventDefinition>
     </intermediateCatchEvent>
     <userTask id="revisar_propuesta" name="Revisar propuesta" flowable:assignee="jefeAdmin" flowable:formKey="cursos-propuesta" flowable:formFieldValidation="true">
       <extensionElements>
         <flowable:taskListener event="complete" class="proyecto.cursos.TareasCurso"></flowable:taskListener>
         <flowable:taskListener event="create" class="proyecto.cursos.TareasCurso"></flowable:taskListener>
         <flowable:taskListener event="assignment" class="proyecto.cursos.TareasCurso"></flowable:taskListener>
-        <modeler:activiti-idm-assignee xmlns:modeler="http://flowable.org/modeler"><![CDATA[true]]></modeler:activiti-idm-assignee>
-        <modeler:assignee-info-email xmlns:modeler="http://flowable.org/modeler"><![CDATA[jefeAdministracion@gimal.com]]></modeler:assignee-info-email>
-        <modeler:assignee-info-firstname xmlns:modeler="http://flowable.org/modeler"><![CDATA[Jefe]]></modeler:assignee-info-firstname>
-        <modeler:assignee-info-lastname xmlns:modeler="http://flowable.org/modeler"><![CDATA[Administración]]></modeler:assignee-info-lastname>
-        <modeler:initiator-can-complete xmlns:modeler="http://flowable.org/modeler"><![CDATA[false]]></modeler:initiator-can-complete>
       </extensionElements>
     </userTask>
     <userTask id="archivar_solicitud" name="Archivar solicitud" flowable:assignee="jefeAdmin" flowable:formFieldValidation="true">
@@ -361,11 +278,6 @@ Recursos" flowable:candidateGroups="administracion" flowable:formKey="cursos-rec
         <flowable:taskListener event="complete" class="proyecto.cursos.TareasCurso"></flowable:taskListener>
         <flowable:taskListener event="create" class="proyecto.cursos.TareasCurso"></flowable:taskListener>
         <flowable:taskListener event="assignment" class="proyecto.cursos.TareasCurso"></flowable:taskListener>
-        <modeler:activiti-idm-assignee xmlns:modeler="http://flowable.org/modeler"><![CDATA[true]]></modeler:activiti-idm-assignee>
-        <modeler:assignee-info-email xmlns:modeler="http://flowable.org/modeler"><![CDATA[jefeAdministracion@gimal.com]]></modeler:assignee-info-email>
-        <modeler:assignee-info-firstname xmlns:modeler="http://flowable.org/modeler"><![CDATA[Jefe]]></modeler:assignee-info-firstname>
-        <modeler:assignee-info-lastname xmlns:modeler="http://flowable.org/modeler"><![CDATA[Administración]]></modeler:assignee-info-lastname>
-        <modeler:initiator-can-complete xmlns:modeler="http://flowable.org/modeler"><![CDATA[false]]></modeler:initiator-can-complete>
       </extensionElements>
     </userTask>
     <sequenceFlow id="FechaDictar" sourceRef="fecha_programada" targetRef="dictar_curso"></sequenceFlow>
@@ -373,9 +285,7 @@ Recursos" flowable:candidateGroups="administracion" flowable:formKey="cursos-rec
     <sequenceFlow id="InformeEnviar" sourceRef="Informe" targetRef="envio_Informe">
       <extensionElements>
         <flowable:executionListener event="take" class="proyecto.cursos.EstadoCurso">
-          <flowable:field name="tipoDocumento">
-            <flowable:string><![CDATA[INFORME]]></flowable:string>
-          </flowable:field>
+          <flowable:field name="tipoDocumento" stringValue="INFORME"></flowable:field>
         </flowable:executionListener>
       </extensionElements>
     </sequenceFlow>
@@ -383,9 +293,7 @@ Recursos" flowable:candidateGroups="administracion" flowable:formKey="cursos-rec
     <sequenceFlow id="main3" sourceRef="enviar_propuesta" targetRef="Esperar">
       <extensionElements>
         <flowable:executionListener event="take" class="proyecto.cursos.EstadoCurso">
-          <flowable:field name="tipoDocumento">
-            <flowable:string><![CDATA[PROPUESTA]]></flowable:string>
-          </flowable:field>
+          <flowable:field name="tipoDocumento" stringValue="PROPUESTA"></flowable:field>
         </flowable:executionListener>
       </extensionElements>
     </sequenceFlow>
@@ -396,21 +304,21 @@ Recursos" flowable:candidateGroups="administracion" flowable:formKey="cursos-rec
     <sequenceFlow id="CerrarSolicitud" sourceRef="archivar_solicitud" targetRef="solicitud_cerrada"></sequenceFlow>
     <sequenceFlow id="main2" sourceRef="reg_elav_propuesta" targetRef="enviar_propuesta"></sequenceFlow>
     <sequenceFlow id="Flow_0upbxn5" sourceRef="revisar_propuesta" targetRef="enviar_propuesta"></sequenceFlow>
-    <sequenceFlow id="OtroRecord" name="No" sourceRef="2_recordatorios" targetRef="envio_recordatorio">
-      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${recordatorios < 2}]]></conditionExpression>
+    <sequenceFlow id="OtroRecord" name="No" sourceRef="limite_recordatorios" targetRef="envio_recordatorio">
+      <conditionExpression xsi:type="tFormalExpression">${intentosRecordatorio &lt; 2}</conditionExpression>
     </sequenceFlow>
-    <sequenceFlow id="SinRespuesta" name="Sí" sourceRef="2_recordatorios" targetRef="archivar_solicitud">
+    <sequenceFlow id="SinRespuesta" name="Sí" sourceRef="limite_recordatorios" targetRef="archivar_solicitud">
       <extensionElements>
-        <flowable:executionListener event="take" expression="${execution.setVariable('resultado', 'SIN_RESPUESTA')}"></flowable:executionListener>
+        <flowable:executionListener event="take" expression="${execution.setVariable('estadoFinal', 'SIN_RESPUESTA')}"></flowable:executionListener>
       </extensionElements>
-      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${recordatorios >= 2}]]></conditionExpression>
+      <conditionExpression xsi:type="tFormalExpression">${intentosRecordatorio &gt;= 2}</conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="Rechazado" sourceRef="msg_rechazo" targetRef="archivar_solicitud"></sequenceFlow>
     <sequenceFlow id="ModificarProp" sourceRef="modificaciones" targetRef="reg_observaciones"></sequenceFlow>
     <sequenceFlow id="InformeArchivar" sourceRef="envio_Informe" targetRef="liberar_recursos"></sequenceFlow>
     <sequenceFlow id="Flow_0kbnm1d" sourceRef="evaluar_viabilidad" targetRef="es_viable"></sequenceFlow>
     <sequenceFlow id="Flow_0k38d9g" name="si" sourceRef="es_viable" targetRef="reg_elav_propuesta">
-      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${viable == true}]]></conditionExpression>
+      <conditionExpression xsi:type="tFormalExpression">${cursoViable == true}</conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="Flow_0w8xn3l" name="no" sourceRef="es_viable" targetRef="notificar_inviabilidad"></sequenceFlow>
     <sequenceFlow id="Flow_00ve97r" sourceRef="notificar_inviabilidad" targetRef="fin_inviable"></sequenceFlow>
@@ -426,12 +334,13 @@ Recursos" flowable:candidateGroups="administracion" flowable:formKey="cursos-rec
     <sequenceFlow id="Flow_175t1j3" sourceRef="notificar_cierre" targetRef="fin_por_cancelacion"></sequenceFlow>
     <sequenceFlow id="Preparado" sourceRef="preparar_curso" targetRef="cacela_preparacion"></sequenceFlow>
     <sequenceFlow id="PreparacionNotificar" name="si" sourceRef="cacela_preparacion" targetRef="notificar_cierre">
-      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${preparacionCancelada == true}]]></conditionExpression>
+      <conditionExpression xsi:type="tFormalExpression">${preparacionCancelada == true}</conditionExpression>
     </sequenceFlow>
-    <sequenceFlow id="sid-30DDC413-C515-42E5-9E0F-10BB41FF9A7F" name="no
-" sourceRef="cacela_preparacion" targetRef="envio_confirmacion_curso"></sequenceFlow>
-    <sequenceFlow id="PlazoLimite" sourceRef="plazo_5dias" targetRef="2_recordatorios"></sequenceFlow>
-    <sequenceFlow id="Flow_0g8vm9l" sourceRef="Inicio" targetRef="evaluar_viabilidad"></sequenceFlow>
+    <sequenceFlow id="sid-30DDC413-C515-42E5-9E0F-10BB41FF9A7F" name="no " sourceRef="cacela_preparacion" targetRef="envio_confirmacion_curso"></sequenceFlow>
+    <sequenceFlow id="PlazoLimite" sourceRef="plazo_5dias" targetRef="limite_recordatorios"></sequenceFlow>
+    <serviceTask id="contar_cursos" flowable:class="proyecto.cursos.OperacionesCurso" name="Contar otros cursos"></serviceTask>
+    <sequenceFlow id="ContarEvaluar" sourceRef="contar_cursos" targetRef="evaluar_viabilidad"></sequenceFlow>
+    <sequenceFlow id="Flow_0g8vm9l" sourceRef="Inicio" targetRef="contar_cursos"></sequenceFlow>
     <sequenceFlow id="wait2" sourceRef="Esperar" targetRef="modificaciones"></sequenceFlow>
   </process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_Collaboration">
@@ -466,7 +375,7 @@ Recursos" flowable:candidateGroups="administracion" flowable:formKey="cursos-rec
       <bpmndi:BPMNShape bpmnElement="envio_recordatorio" id="BPMNShape_envio_recordatorio">
         <omgdc:Bounds height="80.0" width="100.0" x="1540.0" y="330.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape bpmnElement="2_recordatorios" id="BPMNShape_2_recordatorios">
+      <bpmndi:BPMNShape bpmnElement="limite_recordatorios" id="BPMNShape_limite_recordatorios">
         <omgdc:Bounds height="40.0" width="40.0" x="1335.0" y="345.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="msg_aceptar_propuesta" id="BPMNShape_msg_aceptar_propuesta">
@@ -573,6 +482,9 @@ Recursos" flowable:candidateGroups="administracion" flowable:formKey="cursos-rec
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="es_viable" id="BPMNShape_es_viable">
         <omgdc:Bounds height="40.0" width="40.0" x="395.0" y="465.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="contar_cursos" id="BPMNShape_contar_cursos">
+        <omgdc:Bounds x="210.0" y="380.0" width="100.0" height="55.0"></omgdc:Bounds>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="evaluar_viabilidad" id="BPMNShape_evaluar_viabilidad">
         <omgdc:Bounds height="80.0" width="100.0" x="210.0" y="450.0"></omgdc:Bounds>
@@ -751,9 +663,9 @@ Recursos" flowable:candidateGroups="administracion" flowable:formKey="cursos-rec
         <omgdi:waypoint x="1440.0" y="1525.9933774834437"></omgdi:waypoint>
         <omgdi:waypoint x="1367.945251210599" y="1524.3232594244091"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge bpmnElement="Flow_0g8vm9l" id="BPMNEdge_Flow_0g8vm9l" flowable:sourceDockerX="15.25" flowable:sourceDockerY="15.0" flowable:targetDockerX="50.0" flowable:targetDockerY="1.0">
+      <bpmndi:BPMNEdge bpmnElement="Flow_0g8vm9l" id="BPMNEdge_Flow_0g8vm9l" flowable:sourceDockerX="15.25" flowable:sourceDockerY="15.0" flowable:targetDockerX="50.0" flowable:targetDockerY="0.0">
         <omgdi:waypoint x="255.91928831285526" y="359.9354744656269"></omgdi:waypoint>
-        <omgdi:waypoint x="259.9551886475856" y="450.0"></omgdi:waypoint>
+        <omgdi:waypoint x="260.0" y="380.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="VolverEsperar" id="BPMNEdge_VolverEsperar" flowable:sourceDockerX="50.0" flowable:sourceDockerY="40.0" flowable:targetDockerX="20.0" flowable:targetDockerY="20.0">
         <omgdi:waypoint x="1599.9875" y="330.0"></omgdi:waypoint>
@@ -878,6 +790,10 @@ Recursos" flowable:candidateGroups="administracion" flowable:formKey="cursos-rec
       <bpmndi:BPMNEdge bpmnElement="RecursosLiberados" id="BPMNEdge_RecursosLiberados" flowable:sourceDockerX="15.0" flowable:sourceDockerY="15.0" flowable:targetDockerX="14.0" flowable:targetDockerY="14.0">
         <omgdi:waypoint x="1544.9480320956625" y="1726.7541307292697"></omgdi:waypoint>
         <omgdi:waypoint x="1577.0018406307895" y="1726.2286584599674"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="ContarEvaluar" id="BPMNEdge_ContarEvaluar">
+        <omgdi:waypoint x="260.0" y="435.0"></omgdi:waypoint>
+        <omgdi:waypoint x="260.0" y="450.0"></omgdi:waypoint>
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
