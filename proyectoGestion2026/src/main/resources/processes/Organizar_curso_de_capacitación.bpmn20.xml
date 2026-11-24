@@ -196,7 +196,7 @@ Recursos" flowable:candidateGroups="administracion" flowable:formKey="cursos-rec
           <modeler:initiator-can-complete xmlns:modeler="http://flowable.org/modeler"><![CDATA[false]]></modeler:initiator-can-complete>
         </extensionElements>
       </userTask>
-      <subProcess id="Activity_048d5em" name="Cancelación" triggeredByEvent="true">
+      <subProcess id="cancelacion_cursos" name="Cancelación" triggeredByEvent="true">
         <startEvent id="resp_cancelación" name="Recibir Cancelación" isInterrupting="true">
           <messageEventDefinition messageRef="Msg_cancel"></messageEventDefinition>
         </startEvent>
