@@ -1,24 +1,50 @@
 <!doctype html>
-<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Portal de capacitación</title><link rel="stylesheet" href="estilos.css"><script src="app.js?v=empresa-instancia-1" defer></script></head>
-<body><header><strong>Institución de Capacitación</strong><nav><a href="#solicitud">Solicitar curso</a><a href="#acceso">Ingresar</a></nav></header>
-<main><section id="solicitud"><h1>Solicitar una capacitación</h1>
-<form id="registro">
-<label>Código de empresa<input name="empresaCodigo" required pattern="[A-Z0-9][A-Z0-9\-]{0,49}" placeholder="EMP-RC"></label>
-<label>Nombre de la empresa<input name="empresaNombre" required maxlength="150"></label>
-<label>Persona de contacto<input name="contacto" required maxlength="150"></label>
-<label>Correo electrónico<input name="email" type="email" required maxlength="150"></label>
-<label>Teléfono<input name="telefono" type="tel" required maxlength="50"></label>
-<label>Temática<input name="cursoNombre" required maxlength="150"></label>
-<label>Participantes estimados<input name="participantesEstimados" type="number" min="1" max="2147483647" required></label>
-<label>Fechas preferidas<input name="fechasPreferidas" required maxlength="400"></label>
-<label class="ancho">Descripción<textarea name="cursoDescripcion" required maxlength="2000"></textarea></label>
-<button>Enviar solicitud</button>
-</form><p id="registro-estado" role="status"></p></section>
-<section id="acceso"><h2>Acceso al portal</h2>
-<form id="login"><label>Usuario<input name="usuario" autocomplete="username" required></label>
-<label>Contraseña<input name="clave" type="password" autocomplete="current-password" required></label>
-<button>Ingresar</button></form>
-<p id="acceso-estado" role="status"></p>
-<div id="privado" hidden><div class="acciones"><button id="actualizar">Actualizar</button><button id="salir">Cerrar sesión</button></div>
-<div id="contenido"></div></div></section></main></body></html>
+<html lang="es">
+    <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Portal de capacitación</title>
+            <link rel="stylesheet" href="estilos.css">
+            <script src="app.js?v=acciones-tareas-1" defer></script>
+    </head>
+    <body>
+        <header>
+            <strong>Institución de Capacitación</strong>
+            <nav>
+                <a href="#solicitud">Solicitar curso</a>
+                <a href="#acceso">Ingresar</a></nav>
+        </header>
+        <main>
+            <section id="solicitud">
+                <h1>Solicitar una capacitación</h1>
+            <form id="registro">
+                <label>Código de empresa<input name="empresaCodigo" required pattern="[A-Z0-9][A-Z0-9\-]{0,49}" placeholder="EMP-RC"></label>
+                <label>Nombre de la empresa<input name="empresaNombre" required maxlength="150"></label>
+                <label>Persona de contacto<input name="contacto" required maxlength="150"></label>
+                <label>Correo electrónico<input name="email" type="email" required maxlength="150"></label>
+                <label>Teléfono<input name="telefono" type="tel" required maxlength="50"></label>
+                <label>Temática<input name="cursoNombre" required maxlength="150"></label>
+                <label>Participantes estimados<input name="participantesEstimados" type="number" min="1" max="2147483647" required></label>
+                <label>Fechas preferidas<input name="fechasPreferidas" required maxlength="400"></label>
+                <label class="ancho">Descripción<textarea name="cursoDescripcion" required maxlength="2000"></textarea></label>
+                <button>Enviar solicitud</button>
+            </form>
+                <p id="registro-estado" role="status"></p>
+                </section>
+                <section id="acceso">
+                    <h2>Acceso al portal</h2>
+                    <form id="login">
+                        <label>Usuario<input name="usuario" autocomplete="username" required></label>
+                        <label>Contraseña<input name="clave" type="password" autocomplete="current-password" required></label>
+                        <button>Ingresar</button>
+                    </form>
+                    <p id="acceso-estado" role="status"></p>
+                    <div id="privado" hidden>
+                        <div class="acciones">
+                            <button id="actualizar">Actualizar</button>
+                            <button id="salir">Cerrar sesión</button>
+                        </div>
+                        <div id="contenido"></div>
+                    </div>
+                </section>
+        </main>
+    </body>
+</html>

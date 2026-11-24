@@ -54,13 +54,13 @@ Abrimos [Flowable UI](http://localhost:8082/flowable-ui/) y esperamos a que apar
 docker compose exec -T flowable java -cp "/app/WEB-INF/lib/*" proyecto.cursos.InstalarCursos
 ```
 
-El instalador publica el proceso "Process_Curso", la tabla de decisión y los formularios. También crea los usuarios de personal que falten. Esperamos que aparezca **Process_Curso disponible**.
+El instalador publica el modelo ejecutable [Organizar_curso_de_capacitación.bpmn20.xml](proyectoGestion2026/src/main/resources/processes/Organizar_curso_de_capacitación.bpmn20.xml) con la clave `Process_Curso`, la tabla de decisión y los formularios. El diagrama de `docs` es material de referencia. También crea los usuarios de personal que falten. Esperamos que aparezca **Process_Curso disponible**.
 
 ### 4. Abrir el portal y hacer una prueba
 
 Entramos al [portal de cursos](http://localhost:8082/flowable-ui/cursos/) y completamos "Solicitar una capacitación". Después ingresamos como `jefeAdmin` con la contraseña de personal que configuramos al crear la cuenta. Para una solicitud viable, debe aparecer _Registrar y elaborar propuesta_. Abrimos la tarea, cargamos el programa, el presupuesto y las fechas posibles, y pulsamos _Completar propuesta_.
 
-Si queremos comprobar la definición desplegada, entramos a **Flowable UI → Admin → Process Definitions** y buscamos _Organizar curso de capacitación_. En una instalación nueva, la cuenta de demostración de Flowable UI es "admin" con contraseña "test".
+Si queremos comprobar la definición desplegada, entramos a **Flowable UI → Admin → Process Definitions** y buscamos la definición con clave `Process_Curso` y nombre _Institucion de Cursos_. En una instalación nueva, la cuenta de demostración de Flowable UI es "admin" con contraseña "test".
 
 ### 5. Usuarios para uso del Portal
 

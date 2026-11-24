@@ -37,8 +37,8 @@ registro.addEventListener('submit', async e => {
         const resultado = await api('solicitudes', 'POST', {
             ...Object.fromEntries(new FormData(registro)), solicitudId: referencia
         }, null);
-        aviso.textContent = 'Solicitud registrada. Instancia ' + resultado.processInstanceId
-            + '. Referencia ' + resultado.referenciaSolicitud
+        aviso.textContent = 'Solicitud registrada. Instancia ' + resultado.processInstanceId.toString()
+            + '. Referencia ' + resultado.referenciaSolicitud.toString()
             + '. Usuario para el seguimiento después de aceptar: ' + resultado.usuarioEmpresa;
         referencia = crypto.randomUUID();
         registro.reset();
@@ -108,11 +108,11 @@ function agregarAccionDeTarea(tarea, bloque) {
         return;
     }
 
-    switch (tarea.taskDefinitionKey) {
-        case 'Propuesta':
+    switch (tarea.claveActividad) {
+        case 'reg_elav_propuesta':
             bloque.append(boton('Elaborar propuesta', () => abrir(tarea, bloque)));
             break;
-        case 'Archivar':
+        case 'archivar_solicitud':
             bloque.append(boton('Archivar solicitud', () => actuar(tarea.id, 'completar', {})));
             break;
         default:
@@ -121,10 +121,10 @@ function agregarAccionDeTarea(tarea, bloque) {
 }
 
 const campos = {
-    Propuesta: [['programa','Programa','texto'],['presupuesto','Presupuesto','number'],['fechasPosibles','Fechas posibles','text']],
-    Revisar: [['programa','Programa','texto'],['presupuesto','Presupuesto','number'],['fechasPosibles','Fechas posibles','text']],
-    Activity_12i2hpf: [['requiereAula','Aula física','checkbox'],['requierePlataforma','Aula virtual','checkbox'],['requiereEquipamiento','Equipamiento especial','checkbox']],
-    Activity_1018bdz: [['docenteAsignado','Docente','docentes']],
+    reg_elav_propuesta: [['programa','Programa','texto'],['presupuesto','Presupuesto','number'],['fechasPosibles','Fechas posibles','text']],
+    revisar_propuesta: [['programa','Programa','texto'],['presupuesto','Presupuesto','number'],['fechasPosibles','Fechas posibles','text']],
+    evaluar_recursos: [['requiereAula','Aula física','checkbox'],['requierePlataforma','Aula virtual','checkbox'],['requiereEquipamiento','Equipamiento especial','checkbox']],
+    definir_docente_resp: [['docenteAsignado','Docente','docentes']],
     Informe: [['informeResultados','Informe de resultados','texto']]
 };
 
@@ -150,12 +150,12 @@ async function abrir(tarea, bloque) {
     bloque.querySelector('form')?.remove();
     bloque.querySelector('.detalle')?.remove();
     const d = await api('tareas/' + encodeURIComponent(tarea.id) + '/datos');
-    const clave = tarea.taskDefinitionKey;
+    const clave = tarea.claveActividad;
     const detalle = nodo('div');
     detalle.className = 'detalle';
-    if (clave === 'Revisar' && d.observaciones) detalle.append(nodo('p', d.observaciones));
-    if (clave === 'Lista' && d.nomina) detalle.append(nodo('p', d.nomina));
-    if (clave === 'EnviarInforme') {
+    if (clave === 'revisar_propuesta' && d.observaciones) detalle.append(nodo('p', d.observaciones));
+    if (clave === 'confeccion_lista' && d.nomina) detalle.append(nodo('p', d.nomina));
+    if (clave === 'envio_Informe') {
         detalle.append(boton('Descargar informe PDF', async () => {
             const archivo = await api('documentos/' + encodeURIComponent(tarea.processInstanceId) + '/INFORME');
             const url = URL.createObjectURL(archivo);
@@ -185,7 +185,7 @@ async function abrir(tarea, bloque) {
         label.append(input);
         form.append(label);
     }
-    const enviar = nodo('button', clave === 'Propuesta' ? 'Completar propuesta' : 'Completar');
+    const enviar = nodo('button', clave === 'reg_elav_propuesta' ? 'Completar propuesta' : 'Completar');
     enviar.type = 'submit';
     form.append(enviar);
     form.onsubmit = async e => {
