@@ -96,7 +96,7 @@ public class OperacionesCurso implements JavaDelegate {
         if (plazo == null) {
             execution.setVariable("plazoRespuesta", "P5D");
         } else if (Duration.parse(plazo.toString()).compareTo(Duration.ZERO) <= 0) {
-            throw new FlowableException("plazoRespuesta debe ser una duración ISO 8601 positiva");
+            throw new FlowableException("plazoRespuesta debe ser una duración positiva");
         }
     }
 
@@ -118,12 +118,12 @@ public class OperacionesCurso implements JavaDelegate {
             return;
         }
         if (!(fecha instanceof String)) {
-            throw new FlowableException("Falta fechaCurso en formato ISO 8601 con zona");
+            throw new FlowableException("Falta fechaCurso");
         }
         try {
             OffsetDateTime.parse((String) fecha);
         } catch (java.time.format.DateTimeParseException ex) {
-            throw new FlowableException("fechaCurso requiere fecha, hora y zona ISO 8601", ex);
+            throw new FlowableException("fechaCurso requiere fecha, hora y zona", ex);
         }
     }
 
