@@ -30,6 +30,7 @@ import org.springframework.web.server.ResponseStatusException;
 @RequestMapping("/cursos")
 public class ControladorPortalCursos {
     private static final String CONSULTA_TAREAS = "/runtime/tasks?processDefinitionKey=Process_Curso&";
+    private static final String SOLICITUD = "Solicitud de curso";
     private final RepositorioInstitucional institucion;
     private final ClienteRestFlowable motor;
     private final ProyeccionInstitucional proyeccion;
@@ -91,15 +92,30 @@ public class ControladorPortalCursos {
             variables.add(Map.of("name", "solicitudWeb", "type", "string", "value", solicitud));
             try {
                 instancia = motor.llamar("POST", "/runtime/process-instances", Map.of(
-                        "message", "Solicitud de curso", "businessKey", referencia, "variables", variables)).path("id").asText();
+                        "message", SOLICITUD, "businessKey", referencia, "variables", variables)).path("id").asText("");
+                if (instancia.isBlank()) throw new IllegalStateException("Flowable no devolvió el ID de la instancia");
             } catch (ClienteRestFlowable.ErrorMotor | IllegalStateException ex) {
                 instancia = recuperar(referencia, solicitud);
-                if (instancia == null) throw ex;
+                if (instancia == null) {
+                    if (ex instanceof ClienteRestFlowable.ErrorMotor
+                            && ((ClienteRestFlowable.ErrorMotor) ex).estado() == 400
+                            && motorLocal.getRepositoryService().createProcessDefinitionQuery()
+                                    .processDefinitionKey("Process_Curso").messageEventSubscriptionName(SOLICITUD)
+                                    .active().count() == 0) {
+                        throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                                "El proceso de cursos no está desplegado para recibir solicitudes. Ejecutá InstalarCursos.", ex);
+                    }
+                    throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                            "No se pudo iniciar la solicitud en Flowable. Revisá los registros y reintentá sin cambiar los datos.", ex);
+                }
             }
         }
         confirmarRegistroInstitucional(instancia);
+        var cierre = motorLocal.getHistoryService().createHistoricVariableInstanceQuery()
+                .processInstanceId(instancia).variableName("estadoFinal").excludeTaskVariables().singleResult();
         return Map.of("processInstanceId", instancia, "referenciaSolicitud", referencia,
-                "usuarioEmpresa", "empresa-" + datos.get("empresaCodigo"));
+                "usuarioEmpresa", "empresa-" + datos.get("empresaCodigo"),
+                "estado", cierre == null ? "EN_TRAMITE" : String.valueOf(cierre.getValue()));
     }
 
     private void confirmarRegistroInstitucional(String instancia) {
@@ -128,8 +144,38 @@ public class ControladorPortalCursos {
     }
 
     @GetMapping("/api/yo")
-    public Map<String, String> yo(Authentication usuario) {
-        return Map.of("usuario", usuario.getName(), "rol", esEmpresa(usuario) ? "EMPRESA" : "PERSONAL");
+    public Map<String, Object> yo(Authentication usuario) {
+        boolean empresa = esEmpresa(usuario);
+        return Map.of("usuario", usuario.getName(), "rol", empresa ? "EMPRESA" : "PERSONAL",
+                "seguimientoSolicitudes", !empresa && seguridad.pertenece(usuario.getName(), TareasCurso.ADMINISTRACION));
+    }
+
+    @GetMapping("/api/tareas/espera")
+    public List<Map<String, String>> propuestasEnEspera(Principal usuario) {
+        if (!seguridad.pertenece(usuario.getName(), TareasCurso.ADMINISTRACION)) throw prohibido();
+        var esperas = motor.listar("/runtime/executions?processDefinitionKey=Process_Curso"
+                + "&messageEventSubscriptionName=" + ClienteRestFlowable.codificar("Aceptación"));
+        var instancias = new LinkedHashSet<String>();
+        esperas.forEach(espera -> instancias.add(espera.path("processInstanceId").asText()));
+        var propuestas = new ArrayList<Map<String, String>>();
+        for (String id : instancias) {
+            try {
+                var variables = motor.llamar("GET", "/runtime/process-instances/"
+                        + ClienteRestFlowable.codificar(id) + "/variables", null);
+                var propuesta = new LinkedHashMap<String, String>();
+                propuesta.put("processInstanceId", id);
+                for (var variable : variables) {
+                    String nombre = variable.path("name").asText();
+                    if (List.of("empresaCodigo", "empresaNombre", "cursoNombre").contains(nombre)) {
+                        propuesta.put(nombre, variable.path("value").asText(""));
+                    }
+                }
+                propuestas.add(propuesta);
+            } catch (ClienteRestFlowable.ErrorMotor error) {
+                if (error.estado() != 404) throw error;
+            }
+        }
+        return propuestas;
     }
 
     @GetMapping("/api/tareas")

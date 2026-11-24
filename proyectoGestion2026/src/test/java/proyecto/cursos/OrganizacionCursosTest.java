@@ -2,14 +2,21 @@ package proyecto.cursos;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpServer;
+import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.time.Instant;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -28,6 +35,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.springframework.web.server.ResponseStatusException;
 import proyecto.cursos.auxiliares.GestionTareasMateriales;
 
 class OrganizacionCursosTest {
@@ -97,6 +105,112 @@ class OrganizacionCursosTest {
         }
         assertThrows(FlowableException.class, () -> motor.getRuntimeService()
                 .startProcessInstanceByMessage("Solicitud de curso", referencia, datos));
+    }
+
+    @Test
+    void altaDelPortalConfirmaInstanciaYTareaODenegacionDeCupo() throws Exception {
+        String jdbc = "jdbc:h2:mem:alta_portal";
+        try (var conexion = DriverManager.getConnection(jdbc, "sa", "");
+                var esquema = conexion.createStatement()) {
+            esquema.execute("CREATE TABLE cursos (proceso_id varchar(128) PRIMARY KEY, solicitud_web text NOT NULL)");
+            var institucion = new RepositorioInstitucional(jdbc, "sa", "");
+            var proyeccion = new ProyeccionInstitucional(jdbc, jdbc, "sa", "") {
+                @Override int procesar(String id) throws SQLException {
+                    try (var insertar = conexion.prepareStatement("INSERT INTO cursos VALUES (?, ?)")) {
+                        insertar.setString(1, id);
+                        var variable = motor.getHistoryService().createHistoricVariableInstanceQuery()
+                                .processInstanceId(id).variableName("solicitudWeb").singleResult();
+                        insertar.setString(2, (String) variable.getValue());
+                        return insertar.executeUpdate();
+                    }
+                }
+            };
+            HttpServer rest = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+            rest.createContext("/process-api/history/historic-process-instances",
+                    peticion -> responderJson(peticion, Map.of("data", List.of(), "total", 0)));
+            rest.createContext("/process-api/runtime/process-instances", peticion -> {
+                var cuerpo = new ObjectMapper().readTree(peticion.getRequestBody());
+                Map<String, Object> variables = new java.util.HashMap<>();
+                for (var variable : cuerpo.path("variables")) {
+                    variables.put(variable.path("name").asText(), variable.path("value").asText());
+                }
+                String id = motor.getRuntimeService().startProcessInstanceByMessage(cuerpo.path("message").asText(),
+                        cuerpo.path("businessKey").asText(), variables).getId();
+                responderJson(peticion, Map.of("id", id));
+            });
+            rest.start();
+            try {
+                var cliente = new ClienteRestFlowable("http://127.0.0.1:" + rest.getAddress().getPort(), "admin", "prueba");
+                var portal = new ControladorPortalCursos(institucion, cliente, motor.getIdentityService(), proyeccion, motor);
+                Map<String, Object> datos = new java.util.HashMap<>(Map.ofEntries(
+                        Map.entry("solicitudId", java.util.UUID.randomUUID().toString()), Map.entry("empresaCodigo", "EMP-WEB"),
+                        Map.entry("empresaNombre", "Empresa Web"), Map.entry("contacto", "Contacto"),
+                        Map.entry("email", "contacto@example.com"), Map.entry("telefono", "12345678"),
+                        Map.entry("cursoNombre", "BPMN"), Map.entry("cursoDescripcion", "Curso de prueba"),
+                        Map.entry("fechasPreferidas", "Noviembre"), Map.entry("participantesEstimados", 5)));
+                var registrada = portal.registrar(datos);
+                String id = registrada.get("processInstanceId");
+                assertEquals("EN_TRAMITE", registrada.get("estado"));
+                assertTrue(institucion.tieneSolicitud(id));
+                assertEquals("jefeAdmin", tarea(id, "reg_elav_propuesta").getAssignee());
+                for (int i = 0; i < 4; i++) iniciar();
+                datos.put("solicitudId", java.util.UUID.randomUUID().toString());
+                var sinCupo = portal.registrar(datos);
+                assertEquals("NO_VIABLE", sinCupo.get("estado"));
+                assertTrue(institucion.tieneSolicitud(sinCupo.get("processInstanceId")));
+                assertFalse(activa(sinCupo.get("processInstanceId")));
+            } finally {
+                rest.stop(0);
+            }
+        }
+    }
+
+    @Test
+    void administracionPuedeConsultarLaPropuestaMientrasEsperaRespuesta() throws Exception {
+        String id = iniciar();
+        motor.getRuntimeService().setVariables(id, Map.of(
+                "empresaCodigo", "EMP-WEB", "empresaNombre", "Empresa Web", "cursoNombre", "BPMN"));
+        assertEquals("jefeAdmin", tarea(id, "reg_elav_propuesta").getAssignee());
+        HttpServer rest = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        rest.createContext("/process-api/runtime/executions", peticion -> {
+            var datos = espera(id, "Aceptación") == null ? List.of() : List.of(Map.of("processInstanceId", id));
+            responderJson(peticion, Map.of("data", datos, "total", datos.size()));
+        });
+        rest.createContext("/process-api/runtime/process-instances/" + id + "/variables", peticion -> {
+            var datos = motor.getRuntimeService().getVariables(id).entrySet().stream()
+                    .map(variable -> Map.of("name", variable.getKey(), "value", variable.getValue()))
+                    .collect(Collectors.toList());
+            responderJson(peticion, datos);
+        });
+        rest.start();
+        try {
+            var cliente = new ClienteRestFlowable("http://127.0.0.1:" + rest.getAddress().getPort(), "admin", "prueba");
+            var portal = new ControladorPortalCursos(null, cliente, motor.getIdentityService(), null, motor);
+            assertTrue(portal.propuestasEnEspera(() -> "adminCursos").isEmpty());
+            completar(id, "reg_elav_propuesta", PROPUESTA);
+            assertTrue(clavesTareas(id).isEmpty());
+            assertEquals(List.of(Map.of("processInstanceId", id, "empresaCodigo", "EMP-WEB",
+                    "empresaNombre", "Empresa Web", "cursoNombre", "BPMN")),
+                    portal.propuestasEnEspera(() -> "adminCursos"));
+            assertEquals(403, assertThrows(ResponseStatusException.class,
+                    () -> portal.propuestasEnEspera(() -> "docente1")).getRawStatusCode());
+            mensaje(id, "Aceptación", Map.of("fechaCurso", FECHA_ACORDADA));
+            assertTrue(portal.propuestasEnEspera(() -> "adminCursos").isEmpty());
+            assertEquals(Set.of("Materiales", "evaluar_recursos"), clavesTareas(id));
+        } finally {
+            rest.stop(0);
+        }
+    }
+
+    private static void responderJson(HttpExchange peticion, Object datos) throws IOException {
+        try {
+            byte[] respuesta = new ObjectMapper().writeValueAsBytes(datos);
+            peticion.getResponseHeaders().set("Content-Type", "application/json");
+            peticion.sendResponseHeaders(200, respuesta.length);
+            peticion.getResponseBody().write(respuesta);
+        } finally {
+            peticion.close();
+        }
     }
 
     @Test

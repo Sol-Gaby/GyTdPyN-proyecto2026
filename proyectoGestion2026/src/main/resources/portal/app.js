@@ -6,6 +6,7 @@ const estado = document.querySelector('#acceso-estado');
 const actualizar = document.querySelector('#actualizar');
 let auth = null;
 let rol = null;
+let seguimientoSolicitudes = false;
 let revisionCarga = 0;
 let referencia = crypto.randomUUID();
 
@@ -44,14 +45,24 @@ registro.addEventListener('submit', async e => {
         const resultado = await api('solicitudes', 'POST', {
             ...Object.fromEntries(new FormData(registro)), solicitudId: referencia
         }, null);
-        aviso.textContent = 'Solicitud registrada. Instancia ' + resultado.processInstanceId.toString()
-            + '. Referencia ' + resultado.referenciaSolicitud.toString()
-            + '. Usuario para el seguimiento después de aceptar: ' + resultado.usuarioEmpresa;
+        aviso.textContent = 'Solicitud registrada. Instancia ' + resultado.processInstanceId
+            + '. Referencia ' + resultado.referenciaSolicitud + '.'
+            + (resultado.estado === 'NO_VIABLE'
+                ? ' La solicitud quedó cerrada por el límite de cursos en trámite.'
+                : ' Usuario para el seguimiento después de aceptar: ' + resultado.usuarioEmpresa);
         referencia = crypto.randomUUID();
         registro.reset();
     } catch (error) {
         aviso.textContent = error.message;
+        return;
     } finally { boton.disabled = false; }
+    if (auth && seguimientoSolicitudes) {
+        try {
+            await cargar();
+        } catch (error) {
+            estado.textContent = 'La solicitud se registró, pero no se pudo actualizar el panel. ' + error.message;
+        }
+    }
 });
 
 login.addEventListener('submit', async e => {
@@ -59,6 +70,7 @@ login.addEventListener('submit', async e => {
     revisionCarga++;
     auth = null;
     rol = null;
+    seguimientoSolicitudes = false;
     privado.hidden = true;
     contenido.replaceChildren();
     const campos = new FormData(login);
@@ -68,6 +80,7 @@ login.addEventListener('submit', async e => {
         const usuario = await api('yo', 'GET', undefined, credencial);
         auth = credencial;
         rol = usuario.rol;
+        seguimientoSolicitudes = usuario.seguimientoSolicitudes;
         login.reset();
         privado.hidden = false;
         estado.textContent = 'Sesión de ' + usuario.usuario;
@@ -79,6 +92,7 @@ document.querySelector('#salir').onclick = () => {
     revisionCarga++;
     auth = null;
     rol = null;
+    seguimientoSolicitudes = false;
     privado.hidden = true;
     contenido.replaceChildren();
     estado.textContent = 'Sesión cerrada.';
@@ -99,8 +113,14 @@ async function cargar() {
     const revision = ++revisionCarga;
     const empresa = rol === 'EMPRESA';
     let filas;
+    let seguimiento;
     try {
-        filas = await api(empresa ? 'empresa/cursos' : 'tareas');
+        [filas, seguimiento] = await Promise.all([
+            api(empresa ? 'empresa/cursos' : 'tareas'),
+            seguimientoSolicitudes
+                ? api('tareas/espera').then(propuestas => ({propuestas})).catch(error => ({error}))
+                : {propuestas: []}
+        ]);
     } catch (error) {
         if (revision !== revisionCarga) return false;
         throw error;
@@ -128,6 +148,20 @@ async function cargar() {
             agregarAccionDeTarea(fila, bloque);
         }
         listaActualizada.append(bloque);
+    }
+    if (seguimiento.error) {
+        listaActualizada.append(nodo('p', 'No se pudieron consultar las propuestas en espera. ' + seguimiento.error.message));
+    } else if (seguimiento.propuestas.length) {
+        listaActualizada.append(nodo('h3', 'Propuestas en espera de respuesta'));
+        for (const propuesta of seguimiento.propuestas) {
+            const bloque = nodo('article');
+            bloque.append(
+                nodo('strong', propuesta.cursoNombre || 'Curso de capacitación'),
+                nodo('p', 'Empresa: ' + (propuesta.empresaNombre || propuesta.empresaCodigo || 'Sin identificar')),
+                nodo('p', 'Instancia ' + propuesta.processInstanceId)
+            );
+            listaActualizada.append(bloque);
+        }
     }
     contenido.replaceChildren(listaActualizada);
     return true;
