@@ -3,8 +3,10 @@ const login = document.querySelector('#login');
 const privado = document.querySelector('#privado');
 const contenido = document.querySelector('#contenido');
 const estado = document.querySelector('#acceso-estado');
+const actualizar = document.querySelector('#actualizar');
 let auth = null;
 let rol = null;
+let revisionCarga = 0;
 let referencia = crypto.randomUUID();
 
 function nodo(etiqueta, texto) {
@@ -17,7 +19,12 @@ async function api(ruta, metodo = 'GET', datos, credencial = auth) {
     const headers = {'X-Requested-With': 'XMLHttpRequest'};
     if (credencial) headers.Authorization = credencial;
     if (datos !== undefined) headers['Content-Type'] = 'application/json';
-    const r = await fetch('api/' + ruta, { method: metodo, headers, body: datos === undefined ? undefined : JSON.stringify(datos) });
+    const r = await fetch('api/' + ruta, {
+        method: metodo,
+        headers,
+        cache: 'no-store',
+        body: datos === undefined ? undefined : JSON.stringify(datos)
+    });
     if (!r.ok) {
         const detalle = await r.json().catch(() => ({}));
         throw new Error(detalle.error || detalle.message || (r.status === 401
@@ -49,6 +56,7 @@ registro.addEventListener('submit', async e => {
 
 login.addEventListener('submit', async e => {
     e.preventDefault();
+    revisionCarga++;
     auth = null;
     rol = null;
     privado.hidden = true;
@@ -68,19 +76,40 @@ login.addEventListener('submit', async e => {
 });
 
 document.querySelector('#salir').onclick = () => {
+    revisionCarga++;
     auth = null;
     rol = null;
     privado.hidden = true;
     contenido.replaceChildren();
     estado.textContent = 'Sesión cerrada.';
 };
-document.querySelector('#actualizar').onclick = () => cargar().catch(error => { estado.textContent = error.message; });
+actualizar.onclick = async () => {
+    actualizar.disabled = true;
+    estado.textContent = 'Actualizando…';
+    try {
+        if (await cargar()) estado.textContent = 'Lista actualizada.';
+    } catch (error) {
+        estado.textContent = 'No se pudo actualizar la lista. ' + error.message;
+    } finally {
+        actualizar.disabled = false;
+    }
+};
 
 async function cargar() {
+    const revision = ++revisionCarga;
     const empresa = rol === 'EMPRESA';
-    const filas = await api(empresa ? 'empresa/cursos' : 'tareas');
-    contenido.replaceChildren();
-    if (filas.length === 0) contenido.append(nodo('p', empresa ? 'No hay cursos habilitados.' : 'No hay tareas disponibles.'));
+    let filas;
+    try {
+        filas = await api(empresa ? 'empresa/cursos' : 'tareas');
+    } catch (error) {
+        if (revision !== revisionCarga) return false;
+        throw error;
+    }
+    if (revision !== revisionCarga) return false;
+    const listaActualizada = document.createDocumentFragment();
+    if (filas.length === 0) {
+        listaActualizada.append(nodo('p', empresa ? 'No hay cursos habilitados.' : 'No hay tareas disponibles.'));
+    }
     for (const fila of filas) {
         const bloque = nodo('article');
         bloque.append(nodo('h3', empresa ? fila.nombre : fila.name));
@@ -98,8 +127,10 @@ async function cargar() {
             bloque.append(nodo('p', 'Instancia ' + fila.processInstanceId));
             agregarAccionDeTarea(fila, bloque);
         }
-        contenido.append(bloque);
+        listaActualizada.append(bloque);
     }
+    contenido.replaceChildren(listaActualizada);
+    return true;
 }
 
 function agregarAccionDeTarea(tarea, bloque) {
